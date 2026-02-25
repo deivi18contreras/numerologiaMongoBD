@@ -2,6 +2,7 @@ import { Router } from "express";
 import { login } from "../controllers/loginControllers.js";
 import { check } from "express-validator";
 import { validarCampos } from "../middlewares/validarCampos.js";
+import { forgotPassword, resetPassword } from "../controllers/usuariosController.js";
 const router = Router();
 
 router.post("/",
@@ -10,8 +11,10 @@ router.post("/",
         check("password", "La contraseña es obligatoria").notEmpty(),
         check("password", "La contraseña debe tener al menos 7 caracteres").isLength({ min: 6 }),
         validarCampos
-    ],
-    login)
+    ], login)
+
+    router.post('/forgot-password', forgotPassword);
+    router.post('/reset-password', resetPassword);
 
 
 export default router;

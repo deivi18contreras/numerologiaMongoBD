@@ -1,6 +1,7 @@
 import Usuario from "../models/usuariosModel.js"
 import bcryptjs from "bcryptjs"
 import { sendEmail } from "../helpers/sendEmail.js"
+import { sendResetCode } from "../helpers/sendEmail.js"
 
 // Obtener todos los usuarios
 export const getUsuario = async (req, res) => {
@@ -56,16 +57,7 @@ export const postUsuario = async (req, res) => {
     usuario.password = bcryptjs.hashSync(password, salt) // esto convierto el texto en hash 
 
     await usuario.save();
-
-    try {
-      await sendEmail(
-        email,
-        "Bienvenido a Numerologia",`Hola${nombre}, tu cuenta ha sido creada con éxito, !Gracias por unirte¡`
-      );
-    } catch (mailError) {
-      console.log("Error al enviar el correo de bienvenida",mailError);
-      
-    }
+    await enviarEmailBienvenida(usuario)
 
     const usuarioValido = usuario.toObject();
     delete usuarioValido.password;
@@ -161,4 +153,67 @@ export const deleteUsuario = async (req, res) => {
   }
 }
 
+export const forgotPassword = async (req, res, next) =>{
+    try {
+        const {email} = req.body;
+        const usuario = await Usuario.findOne({email});
+
+        if(!usuario){
+            return res.status(404).json({mensaje: "El correo no está registrado"});
+        }
+
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        usuario.resetToken = resetCode;
+        usuario.resetTokenExpire = Date.now() + 15 * 60 * 1000;
+        await usuario.save();
+
+        await sendResetCode(email, resetCode);
+        res.json({ mensaje: "Código de recuperación enviado al email" });
+    } catch (error) {
+        next(error)
+    }
+
+}
+
+export const resetPassword = async (req, res, next) => {
+    try {
+        const { email, code, newPassword } = req.body;
+
+        const usuario = await Usuario.findOne({
+            email,
+            resetToken: code,
+            resetTokenExpire: { $gt: Date.now() } 
+        });
+
+        if (!usuario) {
+            return res.status(400).json({ error: true, mensaje: "Código inválido o expirado" });
+        }
+
+       
+        const salt = bcrypt.genSaltSync(10);
+        usuario.password = bcrypt.hashSync(newPassword, salt);
+
+        
+        usuario.resetToken = undefined;
+        usuario.resetTokenExpire = undefined;
+        await usuario.save();
+
+        res.json({ error: false, mensaje: "Contraseña actualizada correctamente" });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const enviarEmailBienvenida = async(usuario) => {
+  try {
+    await sendEmail(
+      usuario.email,
+        "!Bienvenido a Numerologia¡",
+        `Hola ${usuario.nombre}, gracias por registrarte`
+    )
+  } catch (error) {
+    console.error('Error al enviar email', error.message);   
+  }
+};
 

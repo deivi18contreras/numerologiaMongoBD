@@ -37,7 +37,7 @@
   ],
   "item": [
     {
-      "name": "Login",
+      "name": "Autenticación",
       "item": [
         {
           "name": "Login de Usuario",
@@ -77,6 +77,30 @@
                 "login"
               ]
             }
+          }
+        },
+        {
+          "name": "Olvidé mi contraseña",
+          "request":{
+            "method":"POST",
+            "header":[{"key": "Content-Type", "value": "application/json"}],
+            "body":{
+              "mode":"raw",
+              "raw":"{\n\"email\": \"juan@gemail.com\"\n}"
+            },
+            "url":{ "raw": "{{baseUrl}}/login/forgot-password", "host": ["{{baseUrl}}"], "path": ["login", "forgot-password"]}
+          }
+        },
+        {
+          "name": "Resetear contraseña",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"TOKEN_RECIBIDO_POR_EMAIL\",\n  \"newPassword\": \"nuevaContrasena123\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/login/reset-password", "host": ["{{baseUrl}}"], "path": ["login", "reset-password"] }
           }
         }
       ]
@@ -156,6 +180,7 @@
                 "usuario"
               ]
             }
+
           }
         },
         {
