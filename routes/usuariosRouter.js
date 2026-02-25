@@ -7,7 +7,9 @@ import {
     postUsuario,
     putUsuario,
     putUsuarioActivar,
-    putUsuarioInactivar
+    putUsuarioInactivar,
+    forgotPassword,
+    resetPassword
 } from "../controllers/usuariosController.js"
 
 import { validarCampos } from "../middlewares/validarCampos.js"
@@ -111,5 +113,7 @@ router.delete(
   ],
   deleteUsuario
 );
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 export default router;

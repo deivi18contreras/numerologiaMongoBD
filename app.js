@@ -22,5 +22,5 @@ app.use("/api/pagos", pagosRouter)
 app.use("/api/login", loginRouter);
 
 app.listen(process.env.PORT,()=>{
-    console.log(`Servidor escuchando en el puerto ${process.env.PORT}`);
+    console.log(`👂Servidor escuchando en el puerto ${process.env.PORT}`);
 })

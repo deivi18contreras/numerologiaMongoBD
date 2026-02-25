@@ -179,6 +179,9 @@ export const forgotPassword = async (req, res, next) => {
 export const resetPassword = async (req, res, next) => {
   try {
     const { token, newPassword } = req.body;
+    if (!newPassword || newPassword.trim() === "") {
+      return res.status(400).json({ error: true, mensaje: "La nueva contraseña es obligatoria" });
+    }
     const tokenBusqueda = String(token).trim();
     console.log("🔍 Buscando usuario con token:", tokenBusqueda);
     
