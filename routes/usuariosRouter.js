@@ -44,11 +44,7 @@ router.post(
       .not()
       .isEmpty()
       .isLength({ min: 3, max: 50 }),
-
-    check("edad", "La edad debe ser numérica")
-      .optional()
-      .isNumeric(),
-
+      
     check("fechanacimiento", "La fecha no es válida")
       .optional()
       .isISO8601()

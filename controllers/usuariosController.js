@@ -42,8 +42,6 @@ export const postUsuario = async (req, res) => {
       return res.status(409).json({ msg: "El usuario ya existe" })
     }
 
-
-
     const usuario = new Usuario({
       nombre,
       fechanacimiento,
