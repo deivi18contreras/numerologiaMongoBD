@@ -16,7 +16,7 @@ const notificacionSchema = new mongoose.Schema({
     },
     tipo: {
         type: String,
-        enum: ["lectura", "password", "sistema"],
+        enum: ["lectura", "password", "sistema", "registro", "pago"],
         default: "sistema"
     },
     leida: {

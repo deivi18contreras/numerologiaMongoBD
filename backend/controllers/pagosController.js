@@ -6,8 +6,10 @@ import {
   verificarEstadoUsuario
 } from "../models/pagosModel.js"
 import Usuario from "../models/usuariosModel.js"; 
+import { crearNotificacion } from "./notificacionesController.js";
 
 export const getPagos = async (req, res) => {
+// ... resto del código igual ...
   try {
     const pagos = await obtenerPagos();
     res.json(pagos);
@@ -39,6 +41,21 @@ export const postNuevoPago = async (req, res) => {
       {estado : 1},
       {new: true}
     )
+
+    // Notificar a los administradores sobre el pago
+    try {
+      const admins = await Usuario.find({ rol: "admin" });
+      for (const admin of admins) {
+        await crearNotificacion(
+          admin._id,
+          "Nuevo Intercambio Energético",
+          `El alma ${usuarioActivo?.nombre} ha activado su plan Premium ($${req.body.monto}).`,
+          "pago"
+        );
+      }
+    } catch (notifError) {
+      console.error("Error al notificar pago a admins:", notifError);
+    }
 
    res.status(201).json({
     msg : "Pago registrado correctamente y cuenta activada",

@@ -56,6 +56,22 @@ export const postUsuario = async (req, res) => {
     usuario.password = bcryptjs.hashSync(password, salt) // esto convierto el texto en hash 
 
     await usuario.save();
+    
+    // Notificar a los administradores
+    try {
+      const admins = await Usuario.find({ rol: "admin" });
+      for (const admin of admins) {
+        await crearNotificacion(
+          admin._id,
+          "Nueva Alma Registrada",
+          `El usuario ${usuario.nombre} (${usuario.email}) se ha unido a Astra AI.`,
+          "registro"
+        );
+      }
+    } catch (notifError) {
+      console.error("Error al notificar registro a admins:", notifError);
+    }
+
     await enviarEmailBienvenida(usuario)
 
     const usuarioValido = usuario.toObject();
