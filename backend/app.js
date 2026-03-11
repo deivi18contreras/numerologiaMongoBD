@@ -12,7 +12,11 @@ import { configurarTareasProgramadas } from "./helpers/cron.js"
 const app =express()
 conectarMongo()
 
-app.use(cors());
+app.use(cors({
+    origin: 'https://rococo-meerkat-1bfc7a.netlify.app/', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
