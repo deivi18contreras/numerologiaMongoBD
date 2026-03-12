@@ -10,20 +10,12 @@ import notificacionesRouter from "./routes/notificacionesRouter.js"
 import { configurarTareasProgramadas } from "./helpers/cron.js"
 
 const app =express()
-app.use(cors({
-  origin: [
-    "https://rococo-meerkat-1bfc7a.netlify.app",
-    "http://localhost:9000"
-  ],
-  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization","x-token"]
-}));-
 conectarMongo()
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
+app.use(cors())
 app.use("/api/usuario",usuariosRouter)
-app.use("/api", loginRouter);
+app.use("/api/login", loginRouter);
 app.use("/api/lectura", lecturasRouter)
 app.use("/api/pagos", pagosRouter)
 app.use("/api/notificaciones", notificacionesRouter);
