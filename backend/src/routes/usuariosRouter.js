@@ -3,7 +3,6 @@ import { check } from "express-validator";
 import {
     deleteUsuario,
     getUsuario,
-    getUsuarioById,
     getUsuarioEmail,
     postUsuario,
     putUsuario,
