@@ -33,13 +33,8 @@ app.use("/api/lectura", lecturasRouter);
 app.use("/api/pagos", pagosRouter);
 app.use("/api/notificaciones", notificacionesRouter);
 
-// Servir archivos estáticos de forma relativa (si decides subir el frontend junto al backend)
-// O simplemente desactiva esto si el frontend está en otro hosting
-const frontendPath = path.join(__dirname, "public"); 
-app.use(express.static(frontendPath));
-
 app.get("/", (req, res) => {
-  res.send("Backend de Numerología funcionando correctamente.");
+  res.send("API de Numerología funcionando correctamente. Conecta tu frontend de Netlify aquí.");
 });
 
 // Inicializar tareas programadas (Cron jobs)
