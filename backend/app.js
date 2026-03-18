@@ -18,14 +18,14 @@ const __dirname = path.dirname(__filename);
 const app = express();
 conectarMongo();
 
-const corsOptions = {
-  origin: process.env.FRONTEND_URL || "'https://rococo-meerkat-1bfc7a.netlify.app'", // Permite tu Netlify o todo si no está definido
-  optionsSuccessStatus: 200
-};
+// --- CORRECCIÓN DE CORS ---
+const whiteList = [
+  process.env.FRONTEND_URL,"" 
+].filter(Boolean); 
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors(corsOptions));
+app.use(cors());
 
 app.use("/api/usuario", usuariosRouter);
 app.use("/api/login", loginRouter);
@@ -34,10 +34,9 @@ app.use("/api/pagos", pagosRouter);
 app.use("/api/notificaciones", notificacionesRouter);
 
 app.get("/", (req, res) => {
-  res.send("API de Numerología funcionando correctamente. Conecta tu frontend de Netlify aquí.");
+  res.send("API de Numerología funcionando correctamente.");
 });
 
-// Inicializar tareas programadas (Cron jobs)
 configurarTareasProgramadas();
 
 const PORT = process.env.PORT || 3000;
