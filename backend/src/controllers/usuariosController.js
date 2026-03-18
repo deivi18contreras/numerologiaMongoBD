@@ -2,17 +2,25 @@ import Usuario from "../models/usuariosModel.js"
 import bcryptjs from "bcryptjs"
 import { sendEmail } from "../helpers/sendEmail.js"
 import { sendResetCode } from "../helpers/sendEmail.js"
-import { crearNotificacion } from "./notificacionesController.js"
+import { crearNotificacion, notificarAdmins } from "./notificacionesController.js"
 
 // Obtener todos los usuarios
 export const getUsuario = async (req, res) => {
   try {
-    const usuarios = await Usuario.find()
-    res.json(usuarios)
+    const { email } = req.query;
+    let query = {};
+
+    if (email) {
+      // Búsqueda parcial e insensible a mayúsculas/minúsculas
+      query.email = { $regex: email, $options: "i" };
+    }
+
+    const usuarios = await Usuario.find(query);
+    res.json(usuarios);
   } catch (error) {
-    res.status(400).json({ error })
+    res.status(400).json({ error });
   }
-}
+};
 
 // Obtener usuario por email
 export const getUsuarioEmail = async (req, res) => {
@@ -58,19 +66,11 @@ export const postUsuario = async (req, res) => {
     await usuario.save();
     
     // Notificar a los administradores
-    try {
-      const admins = await Usuario.find({ rol: "admin" });
-      for (const admin of admins) {
-        await crearNotificacion(
-          admin._id,
-          "Nueva Alma Registrada",
-          `El usuario ${usuario.nombre} (${usuario.email}) se ha unido a Astra AI.`,
-          "registro"
-        );
-      }
-    } catch (notifError) {
-      console.error("Error al notificar registro a admins:", notifError);
-    }
+    await notificarAdmins(
+      "Nueva Alma Registrada",
+      `El usuario ${usuario.nombre} (${usuario.email}) se ha unido a Astra AI.`,
+      "registro"
+    );
 
     await enviarEmailBienvenida(usuario)
 
@@ -86,28 +86,38 @@ export const postUsuario = async (req, res) => {
   }
 }
 
-// Actualizar nombre
+// Actualizar usuario
 export const putUsuario = async (req, res) => {
   try {
-    const { id } = req.params
-    const { nombre } = req.body
+    const { id } = req.params;
+    const { nombre, email, fechanacimiento } = req.body;
 
-    const usuario = await Usuario.findByIdAndUpdate(id, { nombre },
+    // Si el email viene en la petición, verificar que no lo tenga otro usuario
+    if (email) {
+      const existeEmail = await Usuario.findOne({ email, _id: { $ne: id } });
+      if (existeEmail) {
+        return res.status(400).json({ msg: "El email ya está registrado por otro usuario" });
+      }
+    }
+
+    const usuario = await Usuario.findByIdAndUpdate(
+      id, 
+      { nombre, email, fechanacimiento },
       { new: true }
-    )
+    );
 
     if (!usuario) {
-      return res.status(404).json({ msg: "Usuario no encontrado" })
+      return res.status(404).json({ msg: "Usuario no encontrado" });
     }
 
     res.json({
-      msg: "Usuario modificado correctamente",
+      msg: "Usuario actualizado correctamente",
       usuario
-    })
+    });
   } catch (error) {
-    res.status(500).json({ msg: error.message })
+    res.status(500).json({ msg: error.message });
   }
-}
+};
 
 // Activar usuario
 export const putUsuarioActivar = async (req, res) => {
@@ -173,6 +183,7 @@ export const forgotPassword = async (req, res, next) => {
     const { email } = req.body;
     const usuario = await Usuario.findOne({ email });
 
+
     if (!usuario) {
       return res.status(404).json({ mensaje: "El correo no está registrado" });
     }
@@ -190,17 +201,12 @@ export const forgotPassword = async (req, res, next) => {
   }
 
 }
-
 export const resetPassword = async (req, res, next) => {
-  try {
-
+try {
     const { token, newPassword } = req.body;
-    if (!newPassword ||  newPassword.trim() === "") {
-      return res.status(400).json({ error: true, mensaje: "La nueva contraseña es obligatoria" });
-    }
     const tokenBusqueda = String(token).trim();
     console.log("🔍 Buscando usuario con token:", tokenBusqueda);
-
+    
 
     const usuario = await Usuario.findOne({
       resetToken: tokenBusqueda,
@@ -221,21 +227,11 @@ export const resetPassword = async (req, res, next) => {
     usuario.resetTokenExpire = undefined;
     await usuario.save();
 
-    await crearNotificacion(
-      usuario._id,
-      "Seguridad: Contraseña Actualizada",
-      "Tu contraseña ha sido restablecida correctamente. Si no realizaste esta acción, contacta a soporte.",
-      "password"
-    );
-
     res.json({ error: false, mensaje: "Contraseña actualizada correctamente" });
   } catch (error) {
     console.error("🔥 Error en resetPassword:", error);
     next(error);
-  }
-};
 
-export const cambiarPassword = async (req, res) => {
   try {
     const { id } = req.usuario;
     const { passwordActual, passwordNueva } = req.body;
@@ -268,6 +264,7 @@ export const cambiarPassword = async (req, res) => {
   }
 };
 
+
 const enviarEmailBienvenida = async (usuario) => {
   try {
     await sendEmail(
@@ -280,3 +277,37 @@ const enviarEmailBienvenida = async (usuario) => {
   }
 };
 
+}
+
+export const cambiarPassword = async (req, res) => {
+  try {
+    const { id } = req.usuario;
+    const { passwordActual, passwordNueva } = req.body;
+
+    const usuario = await Usuario.findById(id);
+    if (!usuario) return res.status(404).json({ msg: "Usuario no encontrado" });
+
+    // Verificar password actual
+    const validPassword = bcryptjs.compareSync(passwordActual, usuario.password);
+    if (!validPassword) {
+      return res.status(400).json({ msg: "La contraseña actual es incorrecta" });
+    }
+
+    // Encriptar nueva password
+    const salt = bcryptjs.genSaltSync(10);
+    usuario.password = bcryptjs.hashSync(passwordNueva, salt);
+    await usuario.save();
+
+    await crearNotificacion(
+      usuario._id,
+      "Seguridad: Contraseña Cambiada",
+      "Has actualizado tu contraseña desde tu perfil.",
+      "password"
+    );
+
+    res.json({ msg: "Contraseña actualizada con éxito" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Error al cambiar contraseña" });
+  }
+}

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const pagoSchema = new mongoose.Schema({
   usuarioId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Usuario',
+    ref: 'Usuario', 
     required: true
   },
   monto: {
@@ -19,9 +19,6 @@ const pagoSchema = new mongoose.Schema({
     enum: ["efectivo", "transferencia", "tarjeta", "mercadopago"],
     required: true
   },
-  preferenceId: {
-    type: String
-  },
   status: {
     type: String,
     enum: ["pending", "approved", "rejected", "cancelled"],
@@ -35,16 +32,19 @@ export default Pago;
 
 
 export const obtenerPagos = async () => {
-  return await Pago.find();
+ 
+  return await Pago.find().populate("usuarioId", "nombre email");
 };
 
 export const obtenerPagosUsuario = async (idUsuario) => {
-  return await Pago.find({ usuarioId: idUsuario });
+  return await Pago.find({ usuarioId: idUsuario }).populate("usuarioId", "nombre email");
 };
 
 export const registrarPago = async (data) => {
   const nuevoPago = new Pago(data);
-  return await nuevoPago.save();
+  const pagoGuardado = await nuevoPago.save();
+  
+  return await Pago.findById(pagoGuardado._id).populate("usuarioId", "nombre email");
 };
 
 export const eliminarPago = async (id) => {

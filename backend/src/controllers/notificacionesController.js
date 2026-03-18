@@ -59,3 +59,14 @@ export const crearNotificacion = async (usuarioId, titulo, mensaje, tipo = "sist
         console.error("Error al crear notificación:", error);
     }
 };
+
+export const notificarAdmins = async (titulo, mensaje, tipo = "sistema") => {
+    try {
+        const admins = await Usuario.find({ rol: "admin" });
+        for (const admin of admins) {
+            await crearNotificacion(admin._id, titulo, mensaje, tipo);
+        }
+    } catch (error) {
+        console.error("Error al notificar a administradores:", error);
+    }
+};

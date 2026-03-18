@@ -7,23 +7,31 @@ import {
 } from "../models/pagosModel.js";
 
 import Usuario from "../models/usuariosModel.js";
-import { crearNotificacion } from "./notificacionesController.js";
-
+import { crearNotificacion, notificarAdmins } from "./notificacionesController.js";
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-// 🔐 CONFIGURACIÓN MERCADO PAGO
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN
 });
 
 export const getPagos = async (req, res) => {
   try {
-    const pagos = await obtenerPagos();
+    const { email } = req.query;
+    let pagos = await obtenerPagos();
+
+    if (email) {
+      const queryLower = email.toLowerCase();
+      pagos = pagos.filter(p => 
+        p.usuarioId?.email?.toLowerCase().includes(queryLower)
+      );
+    }
+
     res.json(pagos);
   } catch (error) {
+    console.error("Error en getPagos:", error);
     res.status(400).json({ error: "Error al obtener los pagos" });
   }
 };
@@ -43,47 +51,52 @@ export const postNuevoPago = async (req, res) => {
     const nuevoPago = await registrarPago(req.body);
     const { usuarioId } = req.body;
     const usuarioActivo = await Usuario.findByIdAndUpdate(usuarioId, { estado: 1 }, { new: true });
+
+    // Notificar al usuario
+    await crearNotificacion(
+      usuarioId,
+      "¡Pago Exitoso!",
+      "Tu suscripción Premium ha sido activada. ¡Bienvenido al cosmos!",
+      "pago"
+    );
+
+    // Notificar a los administradores
+    await notificarAdmins(
+      "Nuevo Pago Recibido",
+      `El usuario ${usuarioActivo.nombre} ha realizado un pago de $${nuevoPago.monto}.`,
+      "pago"
+    );
+
     res.status(201).json({ msg: "Pago registrado y usuario activado", pago: nuevoPago, usuario: usuarioActivo });
   } catch (error) {
+    console.error("Error en postNuevoPago:", error);
     res.status(400).json({ error: "Error al registrar el pago" });
   }
 };
 
-// ===============================
-// 💳 CREAR PREFERENCIA (VERSION DEFINITIVA)
-// ===============================
 export const createPreference = async (req, res) => {
   try {
     const { usuarioId, monto, description } = req.body;
-
     const preference = new Preference(client);
 
     const result = await preference.create({
       body: {
-        items: [
-          {
-            title: description || "Plan Premium Astra AI",
-            quantity: 1,
-            unit_price: Number(monto),
-            currency_id: "COP"
-          }
-        ],
+        items: [{
+          title: description || "Plan Premium Astra AI",
+          quantity: 1,
+          unit_price: Number(monto),
+          currency_id: "COP"
+        }],
         back_urls: {
           success: process.env.FRONTEND_URL || "http://localhost:5173",
           failure: process.env.FRONTEND_URL || "http://localhost:5173",
           pending: process.env.FRONTEND_URL || "http://localhost:5173"
         },
-        metadata: {
-          user_id: usuarioId
-        }
+        metadata: { user_id: usuarioId }
       }
     });
 
-    res.json({
-      id: result.id,
-      init_point: result.init_point
-    });
-
+    res.json({ id: result.id, init_point: result.init_point });
   } catch (error) {
     console.error("❌ ERROR MERCADO PAGO:", error);
     res.status(500).json({ error: "Error al crear preferencia", details: error.message });
@@ -102,7 +115,22 @@ export const recibirWebhook = async (req, res) => {
       if (data.status === "approved") {
         const usuarioId = data.metadata.user_id;
         await registrarPago({ usuarioId, monto: data.transaction_amount, tipo: "mercadopago", status: "approved" });
-        await Usuario.findByIdAndUpdate(usuarioId, { estado: 1 });
+        const usuarioActivo = await Usuario.findByIdAndUpdate(usuarioId, { estado: 1 }, { new: true });
+
+        // Notificar al usuario
+        await crearNotificacion(
+          usuarioId,
+          "¡Suscripción Activada!",
+          "Hemos recibido tu pago a través de Mercado Pago. ¡Ya eres Premium!",
+          "pago"
+        );
+
+        // Notificar a los administradores
+        await notificarAdmins(
+          "Nuevo Pago (Mercado Pago)",
+          `El usuario ${usuarioActivo.nombre} ha activado su suscripción por $${data.transaction_amount}.`,
+          "pago"
+        );
       }
     }
     res.sendStatus(200);
@@ -111,7 +139,6 @@ export const recibirWebhook = async (req, res) => {
   }
 };
 
-// ESTA ERA LA QUE FALTABA
 export const deletePago = async (req, res) => {
   try {
     const pagoEliminado = await eliminarPago(req.params.id);

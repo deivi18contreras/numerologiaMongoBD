@@ -19,7 +19,7 @@ export const login = async (req, res) => {
         
         if (!validPassword) {
             return res.status(400).json({
-                msg: "contraseña incorrecta"
+                msg: "Creendeciales incorrectas"
             });
         }
 

@@ -1,16 +1,16 @@
 import { Router } from "express";
 import { check } from "express-validator";
 import {
-    deleteUsuario,
-    getUsuario,
-    getUsuarioEmail,
-    postUsuario,
-    putUsuario,
-    putUsuarioActivar,
-    putUsuarioInactivar,
-    forgotPassword,
-    resetPassword,
-    cambiarPassword
+  deleteUsuario,
+  getUsuario,
+  getUsuarioEmail,
+  postUsuario,
+  putUsuario,
+  putUsuarioActivar,
+  putUsuarioInactivar,
+  forgotPassword,
+  resetPassword,
+  cambiarPassword
 } from "../controllers/usuariosController.js"
 
 import { validarCampos } from "../middlewares/validarCampos.js"
@@ -18,24 +18,24 @@ import { validarUsuarioActivoMiddleware } from "../middlewares/validarUsuario.js
 import { validarJWT } from "../middlewares/validar-jwt.js";
 
 import {
-    validarEmail,
-    validarExisteUsuario,
-    validaRol
+  validarEmail,
+  validarExisteUsuario,
+  validaRol
 } from "../helpers/usuarios.js";
 
 import { admiRol } from "../middlewares/validar-rol.js";
 
 const router = Router();
 
-router.get("/",[validarJWT,admiRol,getUsuario])
+router.get("/", [validarJWT, admiRol, getUsuario])
 
-router.get("/email",[
+router.get("/email", [
   validarJWT,
-    check("email","El email es obligatorio").not().isEmpty(),
-    check("email", "Formato de email no válido").isEmail(),
-    validarCampos,
+  check("email", "El email es obligatorio").not().isEmpty(),
+  check("email", "Formato de email no válido").isEmail(),
+  validarCampos,
 ],
-getUsuarioEmail
+  getUsuarioEmail
 );
 
 router.post(
@@ -45,7 +45,7 @@ router.post(
       .not()
       .isEmpty()
       .isLength({ min: 3, max: 50 }),
-      
+
     check("fechanacimiento", "La fecha no es válida")
       .optional()
       .isISO8601()
@@ -53,8 +53,8 @@ router.post(
 
     check("email", "Debe ser un email válido").isEmail(),
     check("email").custom(validarEmail),
-    
-    check("password", "Minimo 8 caracteres").isLength({min: 8}),
+
+    check("password", "Minimo 8 caracteres").isLength({ min: 8 }),
     check("rol").custom(validaRol),
 
     validarCampos,
@@ -71,7 +71,7 @@ router.put(
     check("nombre", "El nombre es obligatorio").not().isEmpty(),
 
     validarCampos,
-    validarUsuarioActivoMiddleware,  
+    validarUsuarioActivoMiddleware,
   ],
   putUsuario
 );
