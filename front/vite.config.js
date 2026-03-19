@@ -20,7 +20,7 @@ export default defineConfig({
 
   build: {
     
-    outDir: 'numerologia',
+    outDir: 'dist',
     emptyOutDir: true 
   }
 })
