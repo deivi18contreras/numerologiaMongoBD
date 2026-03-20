@@ -8,8 +8,8 @@ const routes = [
     children: [
       { path: "", component: () => import("../views/loginUsers.vue") },
       { path: "crear-user", component: () => import("../views/crearUser.vue") },
-      { path: "seccionUser", component: () => import("../views/user/seccionUser.vue") },
-      { path: "user-pro", component: () => import("../views/user/seccionUser.vue") },
+      { path: "seccionUser", redirect: "/user/dashboard" },
+      { path: "user-pro", redirect: "/user/dashboard" },
       { path: "mantenimiento", component: () => import("../views/MantenimientoPage.vue") }
     ]
   },
@@ -23,8 +23,7 @@ const routes = [
       { path: "oracle", component: () => import("../views/user/UserOracle.vue") },
       { path: "vault", component: () => import("../views/user/UserVault.vue") },
       { path: "seals", component: () => import("../views/user/UserSeals.vue") },
-      { path: "payments", component: () => import("../views/user/UserPayments.vue") },
-      { path: "premium", component: () => import("../views/user/seccionUser.vue") }
+      { path: "payments", component: () => import("../views/user/UserPayments.vue") }
     ]
   },
 

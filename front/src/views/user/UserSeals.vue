@@ -1,14 +1,6 @@
 <template>
-  <q-page padding class="text-white">
-    <div class="row q-mb-xl">
-      <div class="col-12">
-        <div class="text-overline text-amber-5 letter-spacing-2">TU PROGRESO ESPIRITUAL</div>
-        <h2 class="text-h3 cinzel-font q-ma-none">El Grimorio de Sellos</h2>
-        <p class="text-subtitle1 text-grey-5 q-mt-sm">Cada acción en el cosmos deja una huella eterna. Colecciónalas todas.</p>
-      </div>
-    </div>
-
-    <div class="row q-col-gutter-xl">
+  <q-page class="text-white q-px-lg q-pt-lg">
+    <div class="row q-col-gutter-xl animate-fade-up">
       <div v-for="sello in sellos" :key="sello.id" class="col-12 col-sm-6 col-md-4 col-lg-3">
         <q-card 
           class="sello-card flex flex-center column q-pa-xl overflow-hidden" 
@@ -136,7 +128,24 @@ const unlockedCount = computed(() => sellos.value.filter(s => s.unlocked).length
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
-.mini-slot.filled {
-  background: #fbbf24; box-shadow: 0 0 10px #fbbf24;
+.animate-slide-left { animation: slideLeft 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.animate-fade-up { animation: fadeUp 1s ease-out 0.2s both; }
+
+.header-line {
+  width: 60px;
+  height: 3px;
+  background: #fbbf24;
+  border-radius: 2px;
+  box-shadow: 0 0 10px #fbbf24;
+}
+
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(-50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

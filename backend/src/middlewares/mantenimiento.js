@@ -22,6 +22,7 @@ export const verificarMantenimiento = async (req, res, next) => {
     }
 
     if (req.path.includes('/login')) return next();
+    if (req.originalUrl && req.originalUrl.includes('/config')) return next();
 
     return res.status(503).json({
       msg: "EL COSMOS ESTÁ EN MANTENIMIENTO: Por favor, vuelve más tarde.",

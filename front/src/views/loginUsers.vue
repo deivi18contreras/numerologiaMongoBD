@@ -129,7 +129,7 @@ const login = async () => {
     if (rol === "admin") {
       router.push("/admin");
     } else {
-      router.push("/seccionUser");
+      router.push("/user/dashboard");
     }
 
   } catch (error) {

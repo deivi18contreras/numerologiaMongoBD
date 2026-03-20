@@ -1,16 +1,22 @@
 <template>
-  <q-page padding class="text-white">
-    <!-- CABECERA DINÁMICA -->
-    <div class="row items-end justify-between q-mb-xl animate-fade">
-      <div class="col-12 col-md-8">
-        <div class="text-overline text-amber-5 letter-spacing-2">SINTONÍA ACTUAL</div>
-        <h2 class="text-h2 cinzel-font q-ma-none text-glow">Cosmos Personal</h2>
-        <p class="text-subtitle1 text-indigo-3 q-mt-sm">Tus energías vibran hoy en una frecuencia alta.</p>
-      </div>
+  <q-page class="text-white q-px-lg q-pt-lg">
+    
+    <!-- BIENVENIDA MÍSTICA -->
+    <div class="row justify-center q-mb-xl text-center animate-fade-in">
+       <div class="col-12 relative-position">
+          <div class="text-overline aura-text transition-colors q-mb-sm">PORTAL DE LA SABIDURÍA</div>
+          <h1 class="text-h2 cinzel-font text-white q-ma-none">Bienvenido, <span class="aura-text transition-colors">{{ userNombre }}</span></h1>
+          <div class="aura-divider q-mx-auto q-mt-md transition-colors"></div>
+
+          <!-- ORÁCULO FLASH (MANTRA ANIMADO) -->
+          <div class="oracle-flash-container q-mt-md">
+             <p class="text-h6 text-italic text-grey-4 typewriter-text q-ma-none">"{{ mantraActual }}"</p>
+          </div>
+       </div>
     </div>
 
-    <!-- KPIs DE ENERGÍA (Estilo Moderno) -->
-    <div class="row q-col-gutter-lg q-mb-xl">
+    <!-- KPIs DE ENERGÍA -->
+    <div class="row q-col-gutter-md q-mb-lg animate-fade-up">
       <div class="col-12 col-sm-4" v-for="kpi in kpis" :key="kpi.label">
         <q-card class="kpi-card-modern glass-card-dark">
           <q-card-section class="row items-center no-wrap">
@@ -29,15 +35,15 @@
 
     <div class="row q-col-gutter-xl">
       <!-- RITUAL DEL DÍA -->
-      <div class="col-12 col-md-7">
-        <q-card class="ritual-card-premium glass-card-dark full-height q-pa-lg">
+      <div class="col-12 col-md-8">
+        <q-card class="ritual-card-premium holographic-card glass-card-dark full-height q-pa-lg">
            <div class="row items-center justify-between q-mb-lg">
-              <div class="text-h5 cinzel-font text-amber-5">Ritual de Conexión</div>
-              <q-badge outline color="amber-5" label="Misión Diaria" />
+              <div class="text-h5 cinzel-font aura-text">Ritual de Conexión</div>
+              <q-badge outline class="aura-badge" label="Misión Diaria" />
            </div>
            
            <div class="ritual-content-box q-pa-xl text-center">
-              <q-icon name="flare" size="80px" color="amber-5" class="q-mb-md opacity-40 animate-pulse" />
+              <q-icon name="flare" size="80px" class="q-mb-md opacity-40 animate-pulse aura-icon" />
               <div class="text-h6 text-white q-mb-sm">"Frecuencia de Silencio"</div>
               <p class="text-grey-4 text-body1">Dedica 5 minutos a la respiración profunda. Visualiza un hilo de luz dorada conectando tu corazón con el centro de la galaxia.</p>
               
@@ -47,7 +53,7 @@
       </div>
 
       <!-- MINI GRÁFICO DE ENERGÍA -->
-      <div class="col-12 col-md-5">
+      <div class="col-12 col-md-4">
         <q-card class="glass-card-dark full-height q-pa-lg">
            <div class="text-h6 cinzel-font text-indigo-3 q-mb-xl">Variación Energética</div>
            <div class="energy-chart-mini flex justify-around items-end">
@@ -70,6 +76,15 @@ import { getData } from '../../services/services'
 import { useAuthStore } from '../../store/Auth'
 
 const authStore = useAuthStore()
+
+const userNombre = ref(authStore.usuario?.nombre || 'Buscador')
+const mantras = [
+  "La tranquilidad ilumina tu sendero hacia la prosperidad infinita.",
+  "Tus pensamientos tejen la realidad que caminas hoy.",
+  "El cosmos conspira a favor de tu paz interior y evolución.",
+  "Eres el arquitecto de tu destino y el guardián de tu energía."
+]
+const mantraActual = ref(mantras[Math.floor(Math.random() * mantras.length)])
 
 const energyData = ref([40, 70, 55, 90, 60, 85, 45])
 
@@ -113,29 +128,93 @@ onMounted(async () => {
 .cinzel-font { font-family: 'Cinzel', serif; }
 .letter-spacing-2 { letter-spacing: 2px; }
 
+.aura-divider {
+  width: 150px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--aura-primary), transparent);
+}
+
+.typewriter-text {
+  overflow: hidden;
+  white-space: nowrap;
+  margin: 0 auto;
+  letter-spacing: .1em;
+  animation: typing 4s steps(50, end), blink-caret .75s step-end infinite;
+  border-right: .15em solid var(--aura-primary);
+  display: inline-block;
+  max-width: fit-content;
+}
+
+@keyframes typing { from { width: 0 } to { width: 100% } }
+@keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--aura-primary); } }
+.transition-colors { transition: all 0.5s ease-in-out; }
+
 .glass-card-dark {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(20px);
+  background: rgba(15, 20, 35, 0.4);
+  backdrop-filter: blur(25px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.02);
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.glass-card-dark:hover {
+  border-color: var(--aura-primary);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), inset 0 0 20px var(--aura-glow);
 }
 
 .kpi-card-modern {
-  padding: 20px;
-  transition: transform 0.3s ease;
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
 }
-.kpi-card-modern:hover { transform: translateY(-5px); }
+.kpi-card-modern:hover { transform: translateY(-8px) scale(1.02); }
 
 .kpi-icon-box {
-  width: 45px; height: 45px;
-  border-radius: 12px;
+  width: 55px; height: 55px;
+  border-radius: 16px;
   display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  transition: transform 0.5s ease;
+}
+.kpi-card-modern:hover .kpi-icon-box {
+  transform: scale(1.15) rotate(5deg);
+}
+
+/* HOLOGRAPHIC 3D TILT EFFECT */
+.holographic-card {
+  position: relative;
+  overflow: hidden;
+}
+.holographic-card::before {
+  content: '';
+  position: absolute;
+  top: -100%; left: -100%; width: 300%; height: 300%;
+  background: linear-gradient(115deg, transparent 20%, rgba(255,255,255,0.06) 25%, transparent 30%, rgba(255,255,255,0.03) 50%, transparent 60%);
+  transform: rotate(45deg);
+  transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 2;
+}
+.holographic-card:hover::before {
+  top: -20%; left: -20%;
+  opacity: 1;
 }
 
 .ritual-card-premium {
-  background: linear-gradient(135deg, rgba(30, 27, 75, 0.6) 0%, rgba(15, 23, 42, 0.6) 100%);
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.2) 0%, rgba(10, 15, 30, 0.4) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
+.ritual-card-premium:hover {
+  transform: translateY(-5px) perspective(1000px) rotateX(1deg) rotateY(1deg);
+  border-color: var(--aura-primary);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.8), inset 0 0 40px var(--aura-glow);
+}
+
+/* TEMATIZACION AURA */
+.aura-text { color: var(--aura-primary) !important; text-shadow: 0 0 10px var(--aura-glow); transition: color 0.5s ease; }
+.aura-badge { color: var(--aura-primary) !important; border-color: var(--aura-primary) !important; transition: color 0.5s ease; }
+.aura-icon { color: var(--aura-primary) !important; transition: color 0.5s ease; }
 
 .energy-chart-mini { height: 200px; padding-bottom: 10px; }
 .bar-mini {
@@ -144,13 +223,33 @@ onMounted(async () => {
   position: relative;
   transition: all 0.5s ease;
 }
-.bar-mini:hover { background: #fbbf24; cursor: pointer; }
+.bar-mini:hover { background: var(--aura-primary); cursor: pointer; box-shadow: 0 0 15px var(--aura-glow); }
 
 .mystic-btn {
   letter-spacing: 2px; font-weight: bold;
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+  background: var(--aura-primary) !important; color: #fff !important;
+  box-shadow: 0 0 20px var(--aura-glow) !important;
+  transition: all 0.5s ease;
 }
 
-.animate-fade { animation: fadeIn 1s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-slide-left { animation: slideLeft 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.animate-fade-up { animation: fadeUp 1s ease-out 0.2s both; }
+
+.header-line {
+  width: 60px;
+  height: 3px;
+  background: #fbbf24;
+  border-radius: 2px;
+  box-shadow: 0 0 10px #fbbf24;
+}
+
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(-50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>

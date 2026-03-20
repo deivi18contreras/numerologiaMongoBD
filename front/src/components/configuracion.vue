@@ -254,9 +254,33 @@ onMounted(loadConfig)
 }
 
 .module-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 12px;
+  background: rgba(15, 15, 20, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(251, 191, 36, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(251, 191, 36, 0.05);
+  transition: all 0.3s ease;
+  animation: float-pulse 4s infinite alternate;
+}
+
+@keyframes float-pulse {
+  0% { box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(251, 191, 36, 0.02); transform: translateY(0); }
+  100% { box-shadow: 0 8px 40px rgba(251, 191, 36, 0.1), inset 0 0 20px rgba(251, 191, 36, 0.08); transform: translateY(-2px); }
+}
+
+/* Efectos Neón Ámbar */
+:deep(.q-toggle__thumb) {
+  box-shadow: 0 0 10px #fbbf24 !important;
+}
+:deep(.q-toggle--truthy .q-toggle__track) {
+  background-color: #fbbf24 !important;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.6) !important;
+}
+:deep(.q-slider__track) {
+  box-shadow: 0 0 8px #fbbf24;
+}
+:deep(.q-slider__thumb) {
+  box-shadow: 0 0 15px #fbbf24 !important;
 }
 
 .control-row {
@@ -271,11 +295,21 @@ onMounted(loadConfig)
 }
 
 .save-btn {
-  background: linear-gradient(135deg, #fbbf24, #d97706);
+  background: linear-gradient(135deg, #fbbf24 0%, #b45309 100%);
   color: #000;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  border-radius: 8px;
+  box-shadow: 0 6px 0 #78350f, 0 10px 20px rgba(0,0,0,0.5);
+  transition: all 0.1s ease;
+  border: 1px solid #fde68a;
+  transform: translateY(0);
+}
+
+.save-btn:active {
+  transform: translateY(4px) !important;
+  box-shadow: 0 2px 0 #78350f, 0 5px 10px rgba(0,0,0,0.5) !important;
 }
 
 .bg-dark-soft {

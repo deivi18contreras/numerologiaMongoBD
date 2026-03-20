@@ -5,31 +5,35 @@ import {
 } from "../models/lecturasModel.js";
 import { procesarGeneracionLecturaDiaria } from "../helpers/lecturas.js";
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import "dotenv/config";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// Usamos gemini-1.5-flash que es el más estable para este tipo de tareas
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+const safetySettings = [
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+];
+
+const model = genAI.getGenerativeModel({
+  model: "gemini-2.0-flash",
+  generationConfig: {
+    responseMimeType: "application/json",
+  },
+  safetySettings
+});
 
 async function respuestaIA(prompt) {
   try {
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    return response.text();
+    return JSON.parse(response.text());
   } catch (error) {
     console.error("❌ Error al consultar Gemini:", error);
-    return null; // Devolvemos null para manejar el error después
+    return null;
   }
-}
-
-function extraerJSON(texto) {
-  if (!texto) throw new Error("No se recibió respuesta de la IA");
-  const inicio = texto.indexOf("{");
-  const fin = texto.lastIndexOf("}");
-  if (inicio === -1 || fin === -1) throw new Error("JSON inválido: " + texto);
-  const jsonLimpio = texto.slice(inicio, fin + 1);
-  return JSON.parse(jsonLimpio);
 }
 
 // Calcula número de camino de vida
@@ -65,8 +69,9 @@ function calcularCaminoDeVida(fecha_nacimiento) {
 
 
 export async function generarlecturaPrincipal(req, res) {
+  const { usuarioId } = req.params;
+  console.log("🔮 Petición recibida para Esencia Astral del usuario:", usuarioId);
   try {
-    const { usuarioId } = req.params;
     const resultado = await lecturaPrincipal(usuarioId);
 
     if (!resultado.usuario) {
@@ -97,18 +102,18 @@ export async function generarlecturaPrincipal(req, res) {
       { "nombre": "${resultado.usuario.nombre}", "numeroCamino": ${numeroCamino}, "descripcion": "...", "talentos": ["...", "...", "..."], "mensajeEspiritual": "..." }
     `;
 
-    const contenidoIA = await respuestaIA(prompt);
-    if (!contenidoIA) {
+    const contenidoJSON = await respuestaIA(prompt);
+    if (!contenidoJSON) {
       return res.status(500).json({ msg: "El oráculo no responde en este momento. Intenta de nuevo." });
     }
-
-    const contenidoJSON = extraerJSON(contenidoIA);
 
     const idLectura = await resultado.crear(
       usuarioId,
       "principal",
       JSON.stringify(contenidoJSON),
     );
+
+    console.log("✅ Lectura principal creada con éxito para:", usuarioId);
 
     res.status(201).json({
       msg: "Tu esencia ha sido revelada.",

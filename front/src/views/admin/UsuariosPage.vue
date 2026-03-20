@@ -1,7 +1,7 @@
 <template>
-  <q-page padding class="mystic-pro-bg text-white">
+  <div class="mystic-pro-bg text-white q-pa-md" style="min-height: auto;">
     <!-- CABECERA CON KPIs -->
-    <div class="row q-col-gutter-md q-mb-xl items-center">
+    <div class="row q-col-gutter-md q-mb-md items-center">
       <div class="col-12 col-md-6">
         <h1 class="text-h3 text-amber-5 mystic-title q-ma-none">Gestión de Almas</h1>
         <p class="text-deep-purple-3 q-mt-sm">Arquitecto del Destino: Control total sobre los buscadores. 🌌</p>
@@ -22,7 +22,7 @@
     </div>
 
     <!-- BARRA DE HERRAMIENTAS -->
-    <q-card class="mystic-toolbar q-mb-lg" flat bordered>
+    <q-card class="mystic-toolbar q-mb-md" flat bordered>
       <q-card-section class="row q-col-gutter-md items-center">
         <div class="col-12 col-md-4">
           <q-input v-model="emailBuscar" dark outlined dense color="amber" 
@@ -32,8 +32,14 @@
         </div>
 
         <div class="col-auto">
-          <q-btn-toggle v-model="filtroEstado" toggle-color="amber-9" toggle-text-color="black" flat dense dark rounded
-            :options="[{label: 'Todos', value: 'all'}, {label: 'Activos', value: '1'}, {label: 'Inactivos', value: '0'}]" />
+          <q-btn-toggle v-model="filtroEstado" toggle-color="amber-9" toggle-text-color="black"
+            color="transparent" text-color="grey-5" unelevated rounded no-caps
+            class="filter-toggle-pro"
+            :options="[
+              {label: 'Todos', value: 'all', icon: 'list'}, 
+              {label: 'Activos', value: '1', icon: 'check_circle'}, 
+              {label: 'Inactivos', value: '0', icon: 'block'}
+            ]" />
         </div>
 
         <q-space />
@@ -57,7 +63,7 @@
 
     <!-- TABLA DE USUARIOS -->
     <q-table :rows="filteredUsers" :columns="columns" row-key="_id" selection="multiple" v-model:selected="selected"
-      dark flat bordered class="mystic-table-pro" :loading="loadingTable" :pagination="{ rowsPerPage: 10 }">
+      dark flat bordered class="mystic-table-pro" :loading="loadingTable" :pagination="{ rowsPerPage: 6 }">
       
       <template v-slot:body-cell-nombre="props">
         <q-td :props="props">
@@ -83,7 +89,13 @@
 
       <template v-slot:body-cell-suscripcion="props">
         <q-td :props="props">
-          <div v-if="props.row.estado === 1" style="min-width: 120px">
+          <div v-if="props.row.rol && props.row.rol.toLowerCase() === 'admin'">
+            <div class="row items-center justify-center">
+              <q-icon name="workspace_premium" color="amber-5" size="20px" class="q-mr-sm"/>
+              <span class="text-amber-5 text-weight-bolder">Acceso Eterno</span>
+            </div>
+          </div>
+          <div v-else-if="props.row.estado === 1" style="min-width: 120px">
             <div class="row justify-between items-center q-mb-xs">
               <span class="text-caption text-amber-5">{{ getDaysLeft(props.row.fechaExpiracion) }} días</span>
               <q-icon :name="getSubscriptionIcon(props.row.fechaExpiracion)" :color="getSubscriptionColor(props.row.fechaExpiracion)" size="14px" />
@@ -97,7 +109,10 @@
 
       <template v-slot:body-cell-estado="props">
         <q-td :props="props">
-          <q-chip :color="props.row.estado === 1 ? 'positive' : 'grey-9'" text-color="white" size="sm" dense outline>
+          <q-chip v-if="props.row.rol && props.row.rol.toLowerCase() === 'admin'" color="purple-9" text-color="amber-2" size="sm" dense class="text-weight-bold shadow-4">
+            <q-icon name="stars" class="q-mr-xs" size="14px" /> ADMIN VIP
+          </q-chip>
+          <q-chip v-else :color="props.row.estado === 1 ? 'positive' : 'grey-9'" text-color="white" size="sm" dense outline>
             {{ props.row.estado === 1 ? 'ACTIVO' : 'INACTIVO' }}
           </q-chip>
         </q-td>
@@ -138,9 +153,15 @@
 
             <div class="col-12 col-md-8">
               <div class="row q-col-gutter-md">
-                <div class="col-12"><q-input v-model="editForm.nombre" label="Nombre" dark dense filled color="amber" /></div>
-                <div class="col-12"><q-input v-model="editForm.email" label="Email" dark dense filled color="amber" /></div>
-                <div class="col-12"><q-input v-model="editForm.fechanacimiento" label="Nacimiento" dark dense filled color="amber" type="date" stack-label /></div>
+                <div class="col-12"><q-input v-model="editForm.nombre" label="Nombre (Seña Terrenal)" dark dense filled color="amber" /></div>
+                <div class="col-12"><q-input v-model="editForm.email" label="Email de Conexión" dark dense filled color="amber" /></div>
+                <div class="col-12 col-md-6"><q-input v-model="editForm.fechanacimiento" label="Fecha Nacimiento" dark dense filled color="amber" type="date" stack-label clearable /></div>
+                <div class="col-12 col-md-6">
+                  <q-select v-model="editForm.rol" :options="[{label: 'User', value: 'user'}, {label: 'Admin', value: 'admin'}]" 
+                    label="Jerarquía del Alma" dark dense filled color="amber" emit-value map-options>
+                    <template v-slot:prepend><q-icon :name="editForm.rol === 'admin' ? 'stars' : 'person'" :color="editForm.rol === 'admin' ? 'amber-5' : 'grey'" /></template>
+                  </q-select>
+                </div>
               </div>
               <div class="row justify-end q-mt-xl">
                 <q-btn color="amber-9" text-color="black" label="Guardar Cambios" @click="guardarCambios" unelevated rounded icon="sync_alt" />
@@ -149,12 +170,17 @@
           </q-tab-panel>
 
           <q-tab-panel name="ofrendas" class="q-pa-md">
+             <div class="row justify-between items-center q-mb-md">
+               <div class="text-overline text-amber-5 text-weight-bold">Registro Energético de Transacciones</div>
+               <q-btn color="positive" icon="add" label="Pago Manual" unelevated rounded size="sm" @click="registrarOfrendaManual" />
+             </div>
+             
              <div v-if="loadingPagos" class="column items-center justify-center q-pa-xl">
                 <q-spinner-orbit color="amber" size="64px" />
              </div>
-             <div v-else-if="pagosUsuario.length === 0" class="column items-center justify-center q-pa-xl text-grey-5">
+             <div v-else-if="pagosUsuario.length === 0" class="column items-center justify-center q-pa-xl text-grey-5 border-top-mystic">
                 <q-icon name="sentiment_dissatisfied" size="64px" />
-                <div class="text-h6 q-mt-md">Sin ofrendas registradas.</div>
+                <div class="text-h6 q-mt-md">Aún no hay energía ofrendada.</div>
              </div>
              <div v-else>
                 <q-list dark bordered separator class="mystic-list rounded-borders">
@@ -171,18 +197,21 @@
                     </q-item-section>
                   </q-item>
                 </q-list>
-                <div class="q-mt-lg text-right text-h6 text-amber-5">Total: {{ totalInvertido }}</div>
+                <div class="row justify-between items-center q-mt-lg">
+                  <div class="text-grey-5 text-caption">LTV (Lifetime Value) Aportado</div>
+                  <div class="text-h5 text-weight-bolder text-amber-5">{{ totalInvertido }}</div>
+                </div>
              </div>
           </q-tab-panel>
         </q-tab-panels>
       </q-card>
     </q-dialog>
-  </q-page>
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted, reactive, computed, watch } from 'vue'
-import { getData, putData } from '../../services/services'
+import { getData, putData, postData } from '../../services/services'
 import { useQuasar } from 'quasar'
 
 const $q = useQuasar()
@@ -197,7 +226,7 @@ const loadingTable = ref(false)
 const pagosUsuario = ref([])
 const loadingPagos = ref(false)
 
-const editForm = reactive({ nombre: '', email: '', fechanacimiento: '' })
+const editForm = reactive({ nombre: '', email: '', fechanacimiento: '', rol: 'user' })
 
 const columns = [
   { name: 'nombre', label: 'Buscador', align: 'left', field: 'nombre', sortable: true },
@@ -208,21 +237,29 @@ const columns = [
 
 // LOGICA KPI Y FILTROS
 const stats = computed(() => {
-  const total = usuarios.value.length
-  const activos = usuarios.value.filter(u => u.estado === 1).length
+  const clientes = usuarios.value.filter(u => !(u.rol && u.rol.toLowerCase() === 'admin'))
+  const admins = usuarios.value.filter(u => u.rol && u.rol.toLowerCase() === 'admin').length
+  
+  const total = clientes.length
+  const activos = clientes.filter(u => u.estado === 1 || u.estado === '1').length
   const hoy = new Date().toISOString().split('T')[0]
-  const nuevos = usuarios.value.filter(u => u.createdAt?.startsWith(hoy)).length
+  const nuevos = clientes.filter(u => u.createdAt?.startsWith(hoy)).length
+  
   return [
     { label: 'Total', value: total },
     { label: 'Activos', value: activos },
     { label: 'Nuevos', value: nuevos },
-    { label: 'Admins', value: usuarios.value.filter(u => u.rol === 'ADMIN').length }
+    { label: 'Admins', value: admins }
   ]
 })
 
 const filteredUsers = computed(() => {
   let list = usuarios.value
-  if (filtroEstado.value !== 'all') list = list.filter(u => u.estado.toString() === filtroEstado.value)
+  if (filtroEstado.value === '1') {
+    list = list.filter(u => u.estado === 1 || u.estado === '1')
+  } else if (filtroEstado.value === '0') {
+    list = list.filter(u => u.estado !== 1 && u.estado !== '1')
+  }
   return list
 })
 
@@ -277,17 +314,47 @@ async function bulkStatus(nuevoEstado) {
 async function guardarCambios() {
   $q.loading.show()
   try {
-    await putData(`usuario/${selectedSoul.value._id}`, editForm)
+    const payload = { ...editForm }
+    // Remover fechanacimiento si viene vacía para que Mongoose no crasheé al intentar guardar
+    if (!payload.fechanacimiento) delete payload.fechanacimiento
+    
+    await putData(`usuario/${selectedSoul.value._id}`, payload)
     showExpediente.value = false
     listUsers(false)
+    $q.notify({ message: 'Jerarquía cósmica actualizada con éxito', color: 'amber-9', textColor: 'black', position: 'top' })
   } catch (error) { console.error(error) } finally { $q.loading.hide() }
+}
+
+function registrarOfrendaManual() {
+  $q.dialog({
+    title: 'Materializar Ofrenda Manual',
+    message: 'Ingresa el monto exacto entregado en físico o transferencia directa:',
+    prompt: { model: '', type: 'number', outlined: true, color: 'amber' },
+    cancel: true,
+    color: 'amber-9'
+  }).onOk(async (montoStr) => {
+    const monto = Number(montoStr)
+    if (!monto || monto <= 0) return
+    
+    $q.loading.show()
+    try {
+      await postData('pagos', { usuarioId: selectedSoul.value._id, monto, tipo: "efectivo", status: "approved" })
+      $q.notify({ message: 'Ofrenda materializada con éxito', color: 'positive', position: 'top' })
+      cargarPagos(selectedSoul.value._id)
+      listUsers(false) // Refresca afuera para activar la capa general al instante (Inmortal/Vigente)
+    } catch (error) {
+      console.error(error)
+      $q.notify({ message: 'La ofrenda no pudo concretarse', color: 'negative' })
+    } finally { $q.loading.hide() }
+  })
 }
 
 function verExpediente(user) {
   selectedSoul.value = user
   editForm.nombre = user.nombre
   editForm.email = user.email
-  if (user.fechanacimiento) editForm.fechanacimiento = new Date(user.fechanacimiento).toISOString().split('T')[0]
+  editForm.rol = user.rol || 'user'
+  editForm.fechanacimiento = user.fechanacimiento ? new Date(user.fechanacimiento).toISOString().split('T')[0] : ''
   tabExpediente.value = 'esencia'
   showExpediente.value = true
 }
@@ -309,7 +376,8 @@ onMounted(() => listUsers())
 </script>
 
 <style scoped>
-.mystic-pro-bg { background: radial-gradient(circle at 0% 0%, #1e1b4b 0%, #0f172a 50%, #020617 100%); min-height: 100vh; }
+.mystic-pro-bg { background: radial-gradient(circle at 0% 0%, #1e1b4b 0%, #0f172a 50%, #020617 100%); }
+.filter-toggle-pro { border: 1px solid rgba(245, 158, 11, 0.3); background: rgba(0, 0, 0, 0.2) !important; padding: 3px; border-radius: 30px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5); }
 .mystic-title { font-family: 'Cinzel', serif; text-shadow: 0 0 20px rgba(245, 158, 11, 0.5); }
 .stat-card { background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(245, 158, 11, 0.2); backdrop-filter: blur(8px); }
 .mystic-toolbar { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 16px; }

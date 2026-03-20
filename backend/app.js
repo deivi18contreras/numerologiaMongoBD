@@ -33,18 +33,14 @@ app.use(cors());
 
 // Registro de rutas
 app.use("/api/login", loginRouter); // Login siempre accesible
-app.use("/api/config", configRouter); // Config siempre accesible (tiene su propio validarJWT)
-
-// Mantenimiento solo afecta a lo que viene después (opcionalmente)
-// Pero lo aplicaremos dentro de los routers específicos mejor para control total.
-
 app.use("/api/usuario", verificarMantenimiento, usuariosRouter);
 app.use("/api/lectura", verificarMantenimiento, lecturasRouter);
 app.use("/api/pagos", verificarMantenimiento, pagosRouter);
 app.use("/api/notificaciones", verificarMantenimiento, notificacionesRouter);
+app.use("/api/config", configRouter); 
 
 app.get("/", (req, res) => {
-  res.send("API de Numerología funcionando correctamente.");
+  res.send("API de Numerología funcionando en Localhost.");
 });
 
 configurarTareasProgramadas();

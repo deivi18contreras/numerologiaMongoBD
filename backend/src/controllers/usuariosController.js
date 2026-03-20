@@ -90,7 +90,7 @@ export const postUsuario = async (req, res) => {
 export const putUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, email, fechanacimiento } = req.body;
+    const { nombre, email, fechanacimiento, rol } = req.body;
 
     // Si el email viene en la petición, verificar que no lo tenga otro usuario
     if (email) {
@@ -102,7 +102,7 @@ export const putUsuario = async (req, res) => {
 
     const usuario = await Usuario.findByIdAndUpdate(
       id, 
-      { nombre, email, fechanacimiento },
+      { nombre, email, fechanacimiento, rol },
       { new: true }
     );
 

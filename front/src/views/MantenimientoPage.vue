@@ -25,6 +25,34 @@
   </q-page>
 </template>
 
+<script setup>
+import { onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { getData } from '../services/services'
+
+const router = useRouter()
+let radarInterval
+
+onMounted(() => {
+  // Radar de fondo: Hace ping al núcleo cada 10s para ver si el escudo cayó
+  radarInterval = setInterval(async () => {
+    try {
+      const res = await getData('config')
+      if (res && res.modoMantenimiento === false) {
+        // Redirigir al usuario al portal principal automáticamente
+        router.push('/')
+      }
+    } catch (e) {
+      // Ignorar errores silenciosamente (Sigue en mantenimiento o la red cayó)
+    }
+  }, 10000)
+})
+
+onUnmounted(() => {
+  clearInterval(radarInterval)
+})
+</script>
+
 <style scoped>
 .mystic-pro-bg {
   background: radial-gradient(circle at top right, #1a0b2e 0%, #0d0415 100%);

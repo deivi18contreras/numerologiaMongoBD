@@ -1,13 +1,6 @@
 <template>
-  <q-page padding class="text-white">
-    <div class="row q-mb-xl">
-      <div class="col-12">
-        <div class="text-overline text-amber-5 letter-spacing-2">CRÓNICAS DEL TIEMPO</div>
-        <h2 class="text-h3 cinzel-font q-ma-none">El Archivo</h2>
-      </div>
-    </div>
-
-    <div class="row q-col-gutter-lg">
+  <q-page class="text-white q-px-lg q-pt-lg">
+    <div class="row q-col-gutter-lg animate-fade-up">
       <!-- CUANDO HAY LECTURAS -->
       <div v-for="(lec, i) in lecturas" :key="lec._id" class="col-12 col-sm-6 col-md-4">
         <q-card class="vault-card glass-card-dark cursor-pointer overflow-hidden">
@@ -97,8 +90,24 @@ onMounted(() => loadVault())
   border-color: rgba(251, 191, 36, 0.4);
 }
 
-.vault-card-glow {
-  position: absolute; top: -20%; right: -20%; width: 80px; height: 80px;
-  filter: blur(50px); opacity: 0.2; border-radius: 50%;
+.animate-slide-left { animation: slideLeft 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+.animate-fade-up { animation: fadeUp 1s ease-out 0.2s both; }
+
+.header-line {
+  width: 60px;
+  height: 3px;
+  background: #fbbf24;
+  border-radius: 2px;
+  box-shadow: 0 0 10px #fbbf24;
+}
+
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(-50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
