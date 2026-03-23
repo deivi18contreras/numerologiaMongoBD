@@ -1,47 +1,82 @@
 <template>
-  <q-drawer v-model="drawer" side="right" overlay :width="420" class="glass-panel text-white">
-    <div class="notif-header">
-      <div class="row items-center q-gutter-sm">
-        <q-icon name="notifications_active" color="primary" size="28px" />
-        <div class="text-h6 text-weight-bold">Alertas del Sistema</div>
-      </div>
-      <q-btn flat round dense icon="close" color="grey-5" @click="drawer = false" />
-    </div>
+  <q-dialog v-model="drawer" position="top" transition-show="slide-down" transition-hide="slide-up">
+    <q-card class="glass-profile text-white no-scroll" style="width: 100%; max-width: 600px; border-radius: 0 0 32px 32px;">
+      <q-card-section class="q-pa-lg">
+        <!-- BOTÓN CERRAR -->
+        <div class="row justify-end q-mb-md">
+          <q-btn flat round icon="close" color="grey-5" @click="drawer = false" />
+        </div>
 
-    <div class="notif-filters">
-      <q-btn :unelevated="filtro === 'ALL'" :flat="filtro !== 'ALL'" label="TODAS" color="primary" size="sm" rounded @click="filtro = 'ALL'" />
-      <q-btn :unelevated="filtro === 'UNREAD'" :flat="filtro !== 'UNREAD'" label="NO LEÍDAS" color="primary" size="sm" rounded @click="filtro = 'UNREAD'" />
-    </div>
-
-    <div class="notif-content">
-      <div v-if="loading" class="text-center q-pa-md">
-        <q-spinner-dots color="primary" size="40px" />
-      </div>
-      <div v-else-if="notificacionesFiltradas.length === 0" class="text-center q-pa-xl text-grey-5">
-        <q-icon name="bedtime" size="60px" class="q-mb-md opacity-20" />
-        <div>No hay alertas pendientes.</div>
-      </div>
-
-      <div v-for="notif in notificacionesFiltradas" :key="notif._id" class="notif-card" :class="{ 'opacity-80': notif.leida }">
-        <div class="row justify-between items-start">
-          <div class="row items-center q-gutter-sm">
-            <div class="icon-box" :class="notif.tipo">
-              <q-icon :name="notif.tipo === 'pago' ? 'monetization_on' : 'system_update'" />
+        <!-- HEADER DE NOTIFICACIONES -->
+        <div class="row items-center q-mb-lg">
+          <div class="col-auto q-mr-md">
+            <q-icon name="notifications_active" color="amber-5" size="44px" class="text-glow-amber" />
+          </div>
+          <div class="col">
+            <div class="text-h4 text-weight-bold text-gradient cinzel-font">
+              Alertas del Sistema
             </div>
-            <div>
-              <div class="notif-tag">{{ notif.tipo }}</div>
-              <div class="notif-title">{{ notif.titulo }}</div>
+            <div class="text-caption text-grey-5 letter-spacing-2">
+              Sincronía de la plataforma en tiempo real
             </div>
           </div>
-          <div v-if="!notif.leida" class="glow-dot"></div>
         </div>
-        <div class="notif-text">{{ notif.mensaje }}</div>
-        <div v-if="!notif.leida" class="row q-mt-sm">
-          <q-btn size="sm" color="primary" label="Marcar como leída" unelevated @click="marcarLeida(notif._id)" />
+
+        <!-- FILTROS -->
+        <div class="row q-gutter-sm q-mb-md">
+          <q-btn 
+            dense 
+            flat 
+            :class="filtro === 'ALL' ? 'text-amber-5 text-weight-bolder' : 'text-grey-5'" 
+            label="Todas" 
+            @click="filtro = 'ALL'" 
+          />
+          <q-btn 
+            dense 
+            flat 
+            :class="filtro === 'UNREAD' ? 'text-amber-5 text-weight-bolder' : 'text-grey-5'" 
+            label="Nuevas" 
+            @click="filtro = 'UNREAD'" 
+          />
         </div>
-      </div>
-    </div>
-  </q-drawer>
+
+        <!-- LISTA DE NOTIFICACIONES -->
+        <div class="notif-scroll-area">
+          <div v-if="loading" class="text-center q-pa-xl">
+            <q-spinner-orbit color="amber-5" size="50px" />
+          </div>
+
+          <div v-else-if="notificacionesFiltradas.length === 0" class="text-center q-pa-xl text-grey-5">
+            <q-icon name="bedtime" size="50px" class="q-mb-md opacity-20" />
+            <div class="cinzel-font text-h6">No hay alertas pendientes</div>
+          </div>
+
+          <div v-for="notif in notificacionesFiltradas" :key="notif._id" class="notif-item q-pa-md q-mb-sm" :class="{ 'unread-bg': !notif.leida }">
+            <div class="row items-center q-mb-xs">
+              <q-icon 
+                :name="notif.tipo === 'pago' ? 'monetization_on' : 'system_update'" 
+                :color="notif.tipo === 'pago' ? 'green-4' : 'amber-5'" 
+                size="20px" 
+                class="q-mr-sm"
+              />
+              <div class="text-caption text-uppercase text-weight-bold" :class="notif.tipo === 'pago' ? 'text-green-4' : 'text-amber-5'">
+                {{ notif.tipo }}
+              </div>
+            </div>
+            
+            <div class="row justify-between items-start">
+              <div class="col">
+                <div class="text-subtitle1 text-weight-bold text-white">{{ notif.titulo }}</div>
+                <div class="text-caption text-grey-5">{{ formatTime(notif.fecha) }}</div>
+              </div>
+              <q-btn v-if="!notif.leida" flat round dense icon="done" color="amber-5" size="sm" @click="marcarLeida(notif._id)" />
+            </div>
+            <div class="text-body2 text-grey-4 q-mt-xs">{{ notif.mensaje }}</div>
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
+  </q-dialog>
 </template>
 
 <script setup>
@@ -83,17 +118,53 @@ const marcarLeida = async (id) => {
   } catch (error) { console.error(error) }
 }
 
+const formatTime = (date) => {
+  const d = new Date(date)
+  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) + ' | ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
 defineExpose({ openDrawer: () => { drawer.value = true; fetchNotificaciones() } })
 </script>
 
 <style scoped>
-.glass-panel { background: rgba(25, 16, 34, 0.95); backdrop-filter: blur(14px); border-left: 1px solid rgba(255, 255, 255, 0.1); }
-.notif-header, .notif-filters { padding: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-.notif-content { padding: 15px; overflow-y: auto; }
-.notif-card { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); padding: 12px; border-radius: 12px; margin-bottom: 10px; }
-.notif-title { font-weight: bold; }
-.notif-tag { font-size: 10px; text-transform: uppercase; color: #8c2bee; }
-.notif-text { font-size: 13px; color: #ccc; margin-top: 5px; }
-.glow-dot { width: 8px; height: 8px; border-radius: 50%; background: #4cc9f0; box-shadow: 0 0 8px #4cc9f0; }
-.icon-box { width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: rgba(140, 43, 238, 0.1); color: #8c2bee; }
+.glass-profile {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+.cinzel-font { font-family: 'Cinzel', serif; }
+
+.text-gradient {
+  background: linear-gradient(to right, #fff, #fbbf24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+.notif-scroll-area {
+  max-height: 450px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.notif-scroll-area::-webkit-scrollbar { width: 4px; }
+.notif-scroll-area::-webkit-scrollbar-thumb { background: rgba(251, 191, 36, 0.3); border-radius: 10px; }
+
+.notif-item {
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.unread-bg {
+  background: rgba(251, 191, 36, 0.05);
+  border-color: rgba(251, 191, 36, 0.2);
+}
+
+.text-glow-amber { filter: drop-shadow(0 0 5px #fbbf24); }
+
+.letter-spacing-2 { letter-spacing: 2px; }
 </style>

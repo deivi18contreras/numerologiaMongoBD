@@ -51,9 +51,29 @@
           </div>
           <div class="q-mt-md q-gutter-y-md">
             <div class="control-row">
-              <div class="text-body2">Precio Suscripción Premium</div>
+              <div class="text-body2">Precio Mensual</div>
               <q-input 
-                v-model.number="config.precioSuscripcion" 
+                v-model.number="config.precioMensual" 
+                type="number" 
+                dark dense outlined 
+                prefix="$" 
+                class="compact-input"
+              />
+            </div>
+            <div class="control-row">
+              <div class="text-body2">Precio Trimestral</div>
+              <q-input 
+                v-model.number="config.precioTrimestral" 
+                type="number" 
+                dark dense outlined 
+                prefix="$" 
+                class="compact-input"
+              />
+            </div>
+            <div class="control-row">
+              <div class="text-body2">Precio Anual</div>
+              <q-input 
+                v-model.number="config.precioAnual" 
                 type="number" 
                 dark dense outlined 
                 prefix="$" 
@@ -88,6 +108,58 @@
                   <q-toggle color="red" v-model="config.modoMantenimiento" />
                 </q-item-section>
               </q-item>
+
+              <!-- Programación y Pre-Aviso -->
+              <div class="q-px-md q-pb-md">
+                <div class="row q-col-gutter-sm q-mb-md">
+                  <div class="col-12 col-sm-6">
+                    <div class="text-caption text-grey-5 q-mb-xs">Fecha Programada:</div>
+                    <q-input v-model="config.mantenimientoFecha" type="date" dark outlined dense />
+                  </div>
+                  <div class="col-12 col-sm-6">
+                    <div class="text-caption text-grey-5 q-mb-xs">Hora Programada:</div>
+                    <q-input v-model="config.mantenimientoHora" type="time" dark outlined dense />
+                  </div>
+                </div>
+
+                <!-- Botón de Pre-Aviso -->
+                <q-btn 
+                  label="Enviar Aviso Previo (1-3 días)" 
+                  color="amber-9" 
+                  outline
+                  class="full-width q-mb-md cinzel-font"
+                  icon="campaign"
+                  :loading="loadingPreNotif"
+                  @click="enviarPreAviso"
+                />
+
+                <!-- Editor de mensaje de mantenimiento -->
+                <div v-if="config.modoMantenimiento || config.mantenimientoFecha" class="animate-fade">
+                  <div class="text-caption text-grey-5 q-mb-xs">Mensaje personalizado:</div>
+                  <q-input
+                    v-model="config.mensajeMantenimiento"
+                    type="textarea"
+                    dark
+                    outlined
+                    dense
+                    rows="3"
+                    placeholder="Escribe el aviso previo o el motivo del bloqueo..."
+                    class="bg-black-opacity-20"
+                  />
+                  <div class="row q-gutter-xs q-mt-xs">
+                    <q-btn 
+                      v-for="msg in sugerenciasMantenimiento" 
+                      :key="msg"
+                      size="xs" 
+                      color="grey-9" 
+                      :label="msg" 
+                      flat 
+                      bordered
+                      @click="config.mensajeMantenimiento = msg"
+                    />
+                  </div>
+                </div>
+              </div>
               
               <q-separator dark inset class="opacity-10" />
 
@@ -150,7 +222,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
-import { getData, putData } from '../services/services'
+import { getData, putData, postData } from '../services/services'
 
 const $q = useQuasar()
 const drawer = ref(false)
@@ -158,16 +230,30 @@ const saving = ref(false)
 
 const config = ref({
   precioSuscripcion: 49.99,
+  precioMensual: 15000,
+  precioTrimestral: 40000,
+  precioAnual: 140000,
   moneda: 'COP',
   modoMantenimiento: false,
+  mensajeMantenimiento: '',
+  mantenimientoFecha: '',
+  mantenimientoHora: '',
   aiCreativity: 0.7
 })
+
+const loadingPreNotif = ref(false)
+
+const sugerenciasMantenimiento = [
+  "Realineando los astros (Mantenimiento técnico)",
+  "Pausa cósmica para actualizar el sistema",
+  "Mejorando la conexión estelar"
+]
 
 const loadConfig = async () => {
   try {
     const res = await getData('config')
     if (res) {
-      config.value = res
+      Object.assign(config.value, res)
     }
   } catch (error) {
     console.error('Error al cargar configuración:', error)
@@ -180,8 +266,14 @@ const saveChanges = async () => {
     // Limpiamos el objeto para enviar solo lo necesario
     const dataToSend = {
       precioSuscripcion: config.value.precioSuscripcion,
+      precioMensual: config.value.precioMensual,
+      precioTrimestral: config.value.precioTrimestral,
+      precioAnual: config.value.precioAnual,
       moneda: config.value.moneda,
       modoMantenimiento: config.value.modoMantenimiento,
+      mensajeMantenimiento: config.value.mensajeMantenimiento,
+      mantenimientoFecha: config.value.mantenimientoFecha,
+      mantenimientoHora: config.value.mantenimientoHora,
       aiCreativity: config.value.aiCreativity
     }
 
@@ -212,6 +304,32 @@ const backupSystem = () => {
     icon: 'storage',
     timeout: 3000
   })
+}
+
+const enviarPreAviso = async () => {
+  if (!config.value.mantenimientoFecha) {
+    $q.notify({ message: 'Primero elige una fecha para el aviso', color: 'amber-9', icon: 'warning' })
+    return
+  }
+
+  loadingPreNotif.value = true
+  try {
+    await postData('config/notify-maintenance', {
+      fecha: config.value.mantenimientoFecha,
+      hora: config.value.mantenimientoHora,
+      mensaje: config.value.mensajeMantenimiento
+    })
+    $q.notify({ 
+      message: 'Aviso anticipado enviado a todos los usuarios', 
+      color: 'positive', 
+      icon: 'campaign' 
+    })
+  } catch (error) { 
+    console.error(error)
+    $q.notify({ message: 'Error al enviar el aviso estelar', color: 'negative' })
+  } finally { 
+    loadingPreNotif.value = false 
+  }
 }
 
 const openDrawer = () => {

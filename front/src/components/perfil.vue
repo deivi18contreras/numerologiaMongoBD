@@ -49,25 +49,39 @@
             </div>
 
             <!-- ESTADO DE SUSCRIPCIÓN -->
-            <div class="subscription-status-box q-pa-md" :class="{ 'is-premium': isPremium }">
+            <div class="subscription-status-box q-pa-md q-mb-md" :class="{ 'is-premium': isPremium }">
               <div class="row items-center justify-between q-mb-xs">
                 <span class="text-weight-bolder">{{ isPremium ? 'PLAN PREMIUM ACTIVO' : 'PLAN NEÓFITO (GRATIS)' }}</span>
                 <q-icon :name="isPremium ? 'workspace_premium' : 'lock'" :color="isPremium ? 'amber-5' : 'grey-5'" />
               </div>
-              <div v-if="isPremium" class="text-caption text-amber-2">
-                Tu luz se mantendrá encendida hasta: <span class="text-weight-bold">{{ expirationDate }}</span>
+              <div v-if="isPremium" class="text-caption text-amber-2 column">
+                <div class="row items-center q-mb-xs">
+                  <q-icon name="event" size="14px" class="q-mr-xs" />
+                  Vence: <span class="text-weight-bold q-ml-xs">{{ expirationDate }}</span>
+                </div>
+                <div class="text-weight-bold text-amber-5 text-uppercase letter-spacing-1 bg-amber-9 text-black q-pa-xs rounded-borders text-center" style="font-size: 10px;">
+                  {{ countdownMessage }}
+                </div>
               </div>
               <div v-else class="text-caption text-grey-4">
                 Mejora tu plan para acceder al oráculo completo.
               </div>
+            </div>
+
+            <!-- TIEMPO DE CONEXIÓN -->
+            <div class="connection-box q-pa-sm text-center">
+              <q-icon name="history" size="xs" color="grey-5" class="q-mr-xs" />
+              <span class="text-caption text-grey-5 letter-spacing-1">
+                Tiempo de conexión actual: <span class="text-white text-weight-bold">{{ connectionTimeLabel }}</span>
+              </span>
             </div>
           </div>
         </div>
 
         <div class="row q-col-gutter-md q-mt-lg">
           <div class="col-6">
-            <q-btn outline class="full-width btn-neon-amber text-weight-bold" @click="iniciarRecuperacionPassword">
-              <q-icon name="lock_reset" class="q-mr-sm" />
+            <q-btn outline class="full-width btn-neon-amber text-weight-bold" @click="showSecurityCenter = true">
+              <q-icon name="security" class="q-mr-sm" />
               Seguridad
             </q-btn>
           </div>
@@ -80,6 +94,37 @@
         </div>
       </q-card-section>
     </q-card>
+
+    <!-- DIÁLOGO DE SEGURIDAD -->
+    <q-dialog v-model="showSecurityCenter" persistent>
+      <q-card class="glass-profile text-white" style="width: 400px; border-radius: 20px;">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6 text-gradient">Centro de Seguridad</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pt-md">
+          <div class="q-mb-md">
+            <div class="text-caption text-grey-5 q-mb-xs">Último Inicio de Sesión</div>
+            <div class="text-body2 text-amber-5">{{ formattedLastLogin }}</div>
+          </div>
+          
+          <q-separator dark class="q-my-md" />
+
+          <div class="text-subtitle2 q-mb-sm">Cambiar Contraseña</div>
+          <p class="text-caption text-grey-4">¿Deseas actualizar tu clave de acceso? Te enviaremos un código de seguridad a tu correo.</p>
+          
+          <q-btn 
+            class="full-width q-mt-sm" 
+            color="amber-9" 
+            label="Solicitar Cambio de Clave" 
+            outline
+            @click="iniciarRecuperacionPassword"
+          />
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </q-dialog>
 </template>
 
@@ -100,12 +145,68 @@ const editName = ref('')
 const loadingEdit = ref(false)
 
 const isPremium = computed(() => authStore.usuario?.estado === 1 || authStore.rol === 'admin')
+const showSecurityCenter = ref(false)
+
+// LÓGICA DE TIEMPO DE CONEXIÓN
+const currentTime = ref(new Date())
+let timerInterval = null
+
+const connectionTimeLabel = computed(() => {
+  if (!authStore.sessionStart) return '0m'
+  const start = new Date(authStore.sessionStart)
+  const diffMs = currentTime.value - start
+  const diffMinutes = Math.floor(diffMs / 60000)
+  
+  if (diffMinutes < 1) return 'Hace un momento'
+  const hours = Math.floor(diffMinutes / 60)
+  const minutes = diffMinutes % 60
+  
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
+})
+
+// LÓGICA DE EXSPIRACIÓN (CUENTA REGRESIVA)
+const countdownMessage = computed(() => {
+  if (authStore.rol === 'admin') return 'Acceso de Arquitecto'
+  const expiry = authStore.usuario?.suscripcionExpira
+  if (!expiry) return ''
+  
+  const end = new Date(expiry)
+  const today = new Date()
+  const diffTime = end - today
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  if (diffDays < 0) return 'Suscripción expirada'
+  if (diffDays === 0) return 'Vence hoy'
+  if (diffDays === 1) return 'Vence mañana'
+  return `Vence en ${diffDays} días`
+})
 
 const expirationDate = computed(() => {
   if (authStore.rol === 'admin') return 'Eternidad (Admin)'
   const expiry = authStore.usuario?.suscripcionExpira
   if (!expiry) return 'Próxima renovación'
   return new Date(expiry).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+})
+
+const formattedLastLogin = computed(() => {
+  if (!authStore.sessionStart) return 'No registrado'
+  return new Date(authStore.sessionStart).toLocaleString('es-ES', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  })
+})
+
+import { onMounted, onUnmounted } from 'vue'
+
+onMounted(() => {
+  timerInterval = setInterval(() => {
+    currentTime.value = new Date()
+  }, 30000) // Actualizar cada 30 segundos
+})
+
+onUnmounted(() => {
+  if (timerInterval) clearInterval(timerInterval)
 })
 
 const iniciarRecuperacionPassword = async () => {
@@ -225,7 +326,9 @@ defineExpose({ openDrawer: () => drawer.value = true })
 
 .text-gradient {
   background: linear-gradient(to right, #fff, #fbbf24);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .subscription-status-box {
@@ -234,6 +337,12 @@ defineExpose({ openDrawer: () => drawer.value = true })
 }
 .subscription-status-box.is-premium {
   background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.3);
+}
+
+.connection-box {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
 }
 
 /* BOTONES NEON PREMIUM */
