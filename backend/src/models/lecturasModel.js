@@ -21,7 +21,7 @@ const Lecturas = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true, versionKey: false}
+  { timestamps: true}
 );
 const Lectura = mongoose.model("Lectura", Lecturas);
 

@@ -13,7 +13,7 @@ const safetySettings = [
 ];
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash",
+  model: "gemini-2.5-flash",
   generationConfig: {
     responseMimeType: "application/json",
   },
@@ -72,7 +72,7 @@ export async function procesarGeneracionLecturaDiaria(usuarioId) {
       Instrucciones:
       1. Sé profundo y espiritual.
       2. Devuelve ÚNICAMENTE un JSON válido con este formato:
-      { "fecha": "${new Date().toLocaleDateString('es-ES')}", "mensaje": "...", "energiaDelDia": "...", "consejo": "..." }
+      { "fecha": "${new Date().toLocaleDateString('es-ES')}", "mensaje": "...", "energiaDelDia": "Un título BREVE (máximo 3 palabras)", "consejo": "..." }
     `;
 
     const contenidoJSON = await respuestaIA(prompt);
