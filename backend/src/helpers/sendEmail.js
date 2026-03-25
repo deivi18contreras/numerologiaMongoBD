@@ -22,6 +22,7 @@ const getTransporter = () => {
 
 
 export const sendEmail = async (to, subject, content) => {
+    console.log(`📨 Enviando correo a ${to} con asunto: ${subject}`);
     const mailOptions = {
         from: `"NUMEROLOGIA" <${process.env.EMAIL_USER}>`,
         to,
@@ -43,7 +44,7 @@ export const sendEmail = async (to, subject, content) => {
         console.log('✅ Correo enviado con éxito;', info.response);
         
     } catch (error) {
-        console.error('✖️ Error al enviar correo;', error);
+        console.error('✖️ Error fatal al enviar correo:', error);
         throw new Error('No se pudo enviar el correo de confirmación')      
     }
 }

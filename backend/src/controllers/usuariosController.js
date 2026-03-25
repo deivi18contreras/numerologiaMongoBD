@@ -39,15 +39,18 @@ export const getUsuarioEmail = async (req, res) => {
 
 // Crear usuario
 export const postUsuario = async (req, res) => {
+  console.log("📥 Recibida petición para crear usuario:", req.body.email);
   try {
     const { nombre, fechanacimiento, email, password, rol } = req.body
 
     if (!nombre || !email || !password) {
+      console.log("⚠️ Registro fallido: Faltan campos obligatorios");
       return res.status(400).json({ msg: "Nombre, email y password son obligatorios" })
     }
 
     const existeUsuario = await Usuario.findOne({ email })
     if (existeUsuario) {
+      console.log("⚠️ Registro fallido: Usuario ya existe");
       return res.status(409).json({ msg: "El usuario ya existe" })
     }
 
@@ -63,33 +66,40 @@ export const postUsuario = async (req, res) => {
     const salt = bcryptjs.genSaltSync(10); // esto es la semilla
     usuario.password = bcryptjs.hashSync(password, salt) // esto convierto el texto en hash 
 
+    console.log("💾 Guardando usuario en BD...");
     await usuario.save();
+    console.log("✅ Usuario guardado con ID:", usuario._id);
     
     // Notificar a los administradores
+    console.log("📢 Notificando a administradores...");
     await notificarAdmins(
       "Nueva Alma Registrada",
       `El usuario ${usuario.nombre} (${usuario.email}) se ha unido a Astra AI.`,
       "registro"
-    );
+    ).catch(err => console.error("❌ Error en notificarAdmins:", err));
 
     // Notificación de bienvenida para el usuario
+    console.log("🌠 Creando notificación de bienvenida...");
     await crearNotificacion(
       usuario._id,
       "🌠 ¡Bienvenida al Cosmos!",
       `Hola ${usuario.nombre}, tu viaje astral comienza ahora. Explora tus lecturas diarias y descubre los secretos de los números.`,
       "registro"
-    );
+    ).catch(err => console.error("❌ Error en crearNotificacion:", err));
 
+    console.log("📧 Iniciando proceso de envío de email...");
     enviarEmailBienvenida(usuario); // No usar await para que no bloquee la respuesta
 
     const usuarioValido = usuario.toObject();
     delete usuarioValido.password;
 
+    console.log("🚀 Enviando respuesta exitosa al cliente");
     res.status(201).json({
       msg: "Usuario creado correctamente",
       usuario: usuarioValido
     })
   } catch (error) {
+    console.error("🔥 Error en postUsuario:", error);
     res.status(500).json({ msg: error.message })
   }
 }
@@ -263,14 +273,16 @@ export const resetPassword = async (req, res, next) => {
 };
 
 const enviarEmailBienvenida = async (usuario) => {
+  console.log("🕵️ Intentando enviar email a:", usuario.email);
   try {
     await sendEmail(
       usuario.email,
       "!Bienvenido a Numerologia¡",
       `Hola ${usuario.nombre}, gracias por registrarte`
     )
+    console.log("📧 Email enviado correctamente");
   } catch (error) {
-    console.error('Error al enviar email', error.message);
+    console.error('🔥 Error al enviar email:', error.message);
   }
 };
 
