@@ -2,8 +2,10 @@
     <q-page class="text-white q-px-lg q-pt-xl no-scroll pago-page">
 
         <!-- TÍTULO MÍSTICO -->
-        <div class="row q-mb-xl">
+        <div class="row q-mb-xl relative-position">
             <div class="col-12 text-center animate-fade-down">
+                <q-btn flat icon="arrow_back" color="amber-5" label="Volver al Oráculo" 
+                    class="absolute-left q-ma-md no-print" @click="goToOracle" />
                 <h2 class="cinzel-font text-gold text-shadow q-ma-none text-weight-bold">CRISTALES DE ASCENSIÓN</h2>
                 <div class="text-overline text-amber-5 letter-spacing-5 q-mt-sm">Canaliza tu esencia con el cosmos</div>
             </div>
@@ -104,7 +106,8 @@
                 <q-btn label="Ya completé el Pago" color="amber-10" text-color="black" rounded
                     class="text-weight-bold letter-spacing-2 q-px-xl q-py-sm shadow-up"
                     @click="checkPaymentAndShowReceipt" />
-                <q-btn flat label="Cancelar Transmutación" color="grey-5" class="q-mt-md" @click="cancelPaymentFlow" />
+                <div class="q-mt-md text-caption text-amber-5 animate-pulse">Escuchando los ecos del cosmos...</div>
+                <q-btn flat label="Cancelar Transmutación" color="grey-5" class="q-mt-sm" @click="cancelPaymentFlow" />
             </q-card>
         </q-dialog>
 
@@ -112,7 +115,14 @@
         <q-dialog v-model="showReceipt" persistent full-height backdrop-filter="blur(20px)">
             <q-card class="receipt-container bg-transparent no-shadow column items-center justify-center p-md">
 
-                <div class="receipt-print-area magic-contract q-pa-xl relative-position" id="printable-contract">
+                <div v-if="paymentStatus === 'failure'" class="glass-card-dark q-pa-xl text-center" style="max-width: 500px">
+                    <q-icon name="error_outline" size="100px" color="red-10" class="q-mb-lg" />
+                    <h3 class="cinzel-font text-white q-my-md">EL PACTO HA FALLADO</h3>
+                    <p class="text-grey-4 text-h6">Las energías no se han alineado correctamente. Por favor, intenta de nuevo o contacta con el soporte astral.</p>
+                    <q-btn label="Reintentar Canalización" color="amber-10" text-color="black" rounded class="q-mt-lg" v-close-popup />
+                </div>
+
+                <div v-else class="receipt-print-area magic-contract q-pa-xl relative-position" id="printable-contract">
                     <div class="contract-borders"></div>
                     <div class="row items-center justify-between q-mb-lg">
                         <div class="col-auto">
@@ -137,7 +147,7 @@
                         Por la presente, hacemos constar que el Buscador de la Verdad, <b>{{ authStore.usuario?.nombre
                             || 'ALMA INICIADA' }}</b>, ha entregado una ofrenda de <b>${{ selectedRecibo?.monto ||
                                 selectedPlanPrice }} (COP)</b>. A cambio, los astros le conceden el acceso irrestricto al
-                        rango de <b>{{ selectedRecibo?.description || 'Alianza Astral' }}</b>.
+                        rango de <b>{{ selectedRecibo?.description || (selectedRecibo?.monto ? 'Alianza Astral' : 'Plan Premium') }}</b>.
                     </div>
 
                     <!-- SELLO FINAL (Impreso en el contrato) -->
@@ -158,10 +168,12 @@
                 </div>
 
                 <!-- CONTROLES (NO IMPRIMIBLES) -->
-                <div class="row q-gutter-md q-mt-lg no-print">
+                <div class="row q-gutter-md q-mt-lg no-print" v-if="paymentStatus !== 'failure'">
                     <q-btn icon="print" label="Descargar en Pergamino (PDF)" color="amber-10" text-color="black" rounded
                         class="text-weight-bold letter-spacing-2" @click="printReceipt" />
-                    <q-btn flat icon="close" label="Cerrar y Ascender" color="white" @click="showReceipt = false" />
+                    <q-btn icon="auto_awesome" label="Ir al Oráculo" color="purple-10" rounded
+                        class="text-weight-bold letter-spacing-2" @click="goToOracle" />
+                    <q-btn flat icon="close" label="Cerrar" color="white" @click="showReceipt = false" />
                 </div>
 
             </q-card>
@@ -171,13 +183,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { getData, postData } from '../../services/services'
 import { useAuthStore } from '../../store/Auth'
 import { useQuasar } from 'quasar'
+import { useRoute, useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
 const $q = useQuasar()
+const route = useRoute()
+const router = useRouter()
 const loadingPlan = ref(null)
 const loadingTable = ref(false)
 const pagos = ref([])
@@ -229,6 +244,7 @@ const isProcessingPayment = ref(false)
 const showReceipt = ref(false)
 const selectedRecibo = ref(null)
 const selectedPlanPrice = ref(0)
+const paymentStatus = ref(null)
 let pollInterval = null
 
 // Los planes originales con metadata de cristal 10/10
@@ -308,9 +324,10 @@ const activarPremium = async (plan) => {
             window.open(targetUrl, '_blank')
             // Bloqueamos la pantalla del usuario en un trance
             isProcessingPayment.value = true
+            paymentStatus.value = 'pending'
 
-            // Opcional: Podríamos hacer Polling real consultando loadPagos() cada 4s.
-            // Para asegurar la UX sin depender del webhook local, usamos validación manual.
+            // Iniciar Polling para detectar cuando el Webhook procese el pago
+            startPolling()
         }
     } catch (error) {
         $q.notify({ message: 'Conexión con el portal (MercadoPago) fallida.', color: 'negative' })
@@ -319,32 +336,117 @@ const activarPremium = async (plan) => {
     }
 }
 
-const checkPaymentAndShowReceipt = async () => {
-    // Al usuario confirmar, asumimos que el webhook ya llegó al backend.
-    // Recargamos la tabla de pagos para ver el último
-    isProcessingPayment.value = false;
-    await loadPagos();
-    selectedRecibo.value = pagos.value[0] || {
-        monto: selectedPlanPrice.value,
-        description: 'Plan Premium',
-        _id: 'LOCAL-TEST-8A9C'
-    };
+const startPolling = () => {
+    if (pollInterval) clearInterval(pollInterval)
+    
+    // Consultar cada 4 segundos
+    pollInterval = setInterval(async () => {
+        try {
+            // Consultamos el estado directamente desde el endpoint especializado
+            const res = await getData(`pagos/estado/${authStore.usuario._id}`)
+            
+            if (res && res.estado === 1) {
+                // Actualizamos el store para que la UI se refresque (vibraciones, mensajes, etc.)
+                authStore.usuario.estado = 1
+                if (res.suscripcionExpira) {
+                    authStore.usuario.suscripcionExpira = res.suscripcionExpira
+                }
+                
+                stopPolling()
+                checkPaymentAndShowReceipt()
+            }
+        } catch (error) {
+            console.error("Error en sondeo astral:", error)
+        }
+    }, 4000)
+}
 
-    showReceipt.value = true;
+const stopPolling = () => {
+    if (pollInterval) {
+        clearInterval(pollInterval)
+        pollInterval = null
+    }
+}
+
+const checkPaymentAndShowReceipt = async () => {
+    isProcessingPayment.value = false;
+    stopPolling()
+    
+    await loadPagos();
+    
+    // Buscamos si hay un pago reciente (último minuto)
+    const now = new Date()
+    const pagoReciente = pagos.value.find(p => {
+        const fechaPago = new Date(p.fecha)
+        return (now - fechaPago) < 120000 // 2 minutos de margen
+    })
+
+    if (pagoReciente || authStore.usuario?.estado === 1) {
+        paymentStatus.value = 'success'
+        selectedRecibo.value = pagoReciente || pagos.value[0] || {
+            monto: selectedPlanPrice.value,
+            description: 'Suscripción Astral',
+            _id: 'CONFIRMADO-' + Math.random().toString(36).substr(2, 9).toUpperCase()
+        };
+        showReceipt.value = true;
+    } else {
+        // Si llegamos aquí y no hay pago pero se cerró el modal manual, podríamo mostrar error o seguir esperando
+        $q.notify({ message: 'Aún no detectamos tu ofrenda. Si ya pagaste, espera un momento.', color: 'warning' })
+    }
+}
+
+const handleUrlParams = async () => {
+    const status = route.query.status
+    if (status) {
+        if (status === 'success') {
+            paymentStatus.value = 'success'
+            isProcessingPayment.value = false
+            stopPolling()
+            
+            // Forzar actualización del perfil en el store
+            const resState = await getData(`pagos/estado/${authStore.usuario._id}`)
+            if (resState && resState.estado === 1) {
+                authStore.usuario.estado = 1
+                authStore.usuario.suscripcionExpira = resState.suscripcionExpira
+            }
+
+            await loadPagos()
+            selectedRecibo.value = pagos.value[0]
+            showReceipt.value = true
+            
+            // Limpiar parámetros para que no se repita el modal al recargar
+            router.replace({ query: {} })
+        } else if (status === 'failure') {
+            paymentStatus.value = 'failure'
+            isProcessingPayment.value = false
+            stopPolling()
+            showReceipt.value = true
+            router.replace({ query: {} })
+        }
+    }
 }
 
 const cancelPaymentFlow = () => {
     isProcessingPayment.value = false;
-    clearInterval(pollInterval);
+    stopPolling()
 }
 
 const printReceipt = () => {
     window.print();
 }
 
+const goToOracle = () => {
+    router.push('/user/oracle')
+}
+
 onMounted(() => {
     loadPagos()
     loadConfigAndPrices()
+    handleUrlParams()
+})
+
+onUnmounted(() => {
+    stopPolling()
 })
 </script>
 

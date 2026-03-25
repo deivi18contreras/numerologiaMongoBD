@@ -120,9 +120,9 @@ export const createPreference = async (req, res) => {
           currency_id: "COP"
         }],
         back_urls: {
-          success: `${process.env.FRONTEND_URL || "http://localhost:5173"}#/user`,
-          failure: `${process.env.FRONTEND_URL || "http://localhost:5173"}#/user`,
-          pending: `${process.env.FRONTEND_URL || "http://localhost:5173"}#/user`
+          success: `${process.env.FRONTEND_URL || "http://localhost:5173"}#/user/payments?status=success`,
+          failure: `${process.env.FRONTEND_URL || "http://localhost:5173"}#/user/payments?status=failure`,
+          pending: `${process.env.FRONTEND_URL || "http://localhost:5173"}#/user/payments?status=pending`
         },
         auto_return: "approved",
         notification_url: `${BACKEND_URL}/pagos/webhook`, // URL corregida
