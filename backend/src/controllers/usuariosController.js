@@ -37,6 +37,21 @@ export const getUsuarioEmail = async (req, res) => {
   }
 }
 
+// Enviar email de bienvenida (función auxiliar - debe estar ANTES de postUsuario)
+const enviarEmailBienvenida = async (usuario) => {
+  console.log("🕵️ Intentando enviar email a:", usuario.email);
+  try {
+    await sendEmail(
+      usuario.email,
+      "!Bienvenido a Numerologia¡",
+      `Hola ${usuario.nombre}, gracias por registrarte`
+    )
+    console.log("📧 Email enviado correctamente");
+  } catch (error) {
+    console.error('🔥 Error al enviar email:', error.message);
+  }
+};
+
 // Crear usuario
 export const postUsuario = async (req, res) => {
   console.log("📥 Recibida petición para crear usuario:", req.body.email);
@@ -272,19 +287,7 @@ export const resetPassword = async (req, res, next) => {
   }
 };
 
-const enviarEmailBienvenida = async (usuario) => {
-  console.log("🕵️ Intentando enviar email a:", usuario.email);
-  try {
-    await sendEmail(
-      usuario.email,
-      "!Bienvenido a Numerologia¡",
-      `Hola ${usuario.nombre}, gracias por registrarte`
-    )
-    console.log("📧 Email enviado correctamente");
-  } catch (error) {
-    console.error('🔥 Error al enviar email:', error.message);
-  }
-};
+// (función enviarEmailBienvenida movida al inicio del archivo, antes de postUsuario)
 
 export const cambiarPassword = async (req, res) => {
   try {
