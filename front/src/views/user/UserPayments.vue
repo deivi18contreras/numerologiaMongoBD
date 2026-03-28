@@ -322,13 +322,15 @@ const activarPremium = async (plan) => {
 
         const targetUrl = res.sandbox_init_point || res.init_point
         if (targetUrl) {
-            window.open(targetUrl, '_blank')
-            // Bloqueamos la pantalla del usuario en un trance
-            isProcessingPayment.value = true
-            paymentStatus.value = 'pending'
-
+            // Usar la misma pestaña para una experiencia más profesional y sin confusiones
+            window.location.href = targetUrl;
+            
+            // Bloqueamos la pantalla del usuario en un trance antes de que la página se redireccione
+            isProcessingPayment.value = true;
+            paymentStatus.value = 'pending';
+            
             // Iniciar Polling para detectar cuando el Webhook procese el pago
-            startPolling()
+            startPolling();
         }
     } catch (error) {
         $q.notify({ message: 'Conexión con el portal (MercadoPago) fallida.', color: 'negative' })
