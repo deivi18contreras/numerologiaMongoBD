@@ -343,6 +343,25 @@ const startPolling = () => {
     // Consultar cada 3 segundos para una sensación más rápida
     pollInterval = setInterval(async () => {
         try {
+            // 1. CHEQUEO LOCAL: ¿Ya llegó un eco astral de otra pestaña?
+            const ecoAstral = localStorage.getItem('astra_pago_eco');
+            if (ecoAstral) {
+                const data = JSON.parse(ecoAstral);
+                const timeDiff = Date.now() - data.timestamp;
+                
+                // Solo si el eco es reciente (menos de 30 segundos)
+                if (timeDiff < 30000) {
+                    if (data.status === 'success' || data.status === 'failure') {
+                        paymentStatus.value = data.status;
+                        localStorage.removeItem('astra_pago_eco'); // Limpiar el eco
+                        stopPolling();
+                        checkPaymentAndShowReceipt();
+                        return;
+                    }
+                }
+            }
+
+            // 2. CHEQUEO SERVIDOR: El Webhook de Mercado Pago
             const res = await getData(`pagos/estado/${authStore.usuario._id}`)
             
             if (res && res.estado === 1) {
@@ -383,6 +402,11 @@ const checkPaymentAndShowReceipt = async () => {
         return (now - fechaPago) < 120000 // 2 minutos de margen
     })
 
+    if (paymentStatus.value === 'failure') {
+        showReceipt.value = true;
+        return;
+    }
+
     if (pagoReciente || authStore.usuario?.estado === 1) {
         paymentStatus.value = 'success'
         selectedRecibo.value = pagoReciente || pagos.value[0] || {
@@ -392,7 +416,6 @@ const checkPaymentAndShowReceipt = async () => {
         };
         showReceipt.value = true;
     } else {
-        // Si llegamos aquí y no hay pago pero se cerró el modal manual, podríamo mostrar error o seguir esperando
         $q.notify({ message: 'Aún no detectamos tu ofrenda. Si ya pagaste, espera un momento.', color: 'warning' })
     }
 }
@@ -400,6 +423,12 @@ const checkPaymentAndShowReceipt = async () => {
 const handleUrlParams = async () => {
     const status = route.query.status
     if (status) {
+        // Guardar un ECO para que otras pestañas abiertas sepan el resultado inmediatamente
+        localStorage.setItem('astra_pago_eco', JSON.stringify({ 
+            status, 
+            timestamp: Date.now() 
+        }));
+
         if (status === 'success') {
             paymentStatus.value = 'success'
             isProcessingPayment.value = false
